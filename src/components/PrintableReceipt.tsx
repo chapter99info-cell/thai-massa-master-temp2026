@@ -1,6 +1,7 @@
 import React from 'react';
 import { storeConfig } from '../config';
 import { StaffStatus } from '../types';
+import { services } from '../data/services';
 
 interface PrintableReceiptProps {
   session: StaffStatus;
@@ -117,6 +118,16 @@ export default function PrintableReceipt({ session, paymentMethod, hicapsData, d
 
       <div className="text-center pt-4 border-t border-black mt-4">
         <p>Paid via: {paymentMethod}</p>
+        
+        {session.currentServiceId && services.find(s => s.id === session.currentServiceId)?.postCareTips && (
+          <div className="mt-4 border border-black p-2 text-left">
+            <p className="font-bold border-b border-black mb-1 text-center">POST-CARE ADVICE</p>
+            {services.find(s => s.id === session.currentServiceId)?.postCareTips?.map((tip, idx) => (
+              <p key={idx} className="mb-1 leading-tight">• {tip.en}</p>
+            ))}
+          </div>
+        )}
+
         <p className="mt-2 italic">Thank you for visiting us!</p>
         <p className="mt-1">Please keep this receipt for your records.</p>
       </div>

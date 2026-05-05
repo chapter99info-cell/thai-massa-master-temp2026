@@ -7,7 +7,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './components/Home';
-import Chapter99Solution from './components/NongMira';
+import NongSom from './components/NongSom';
 import Cart from './components/Cart';
 import StaffDashboard from './components/StaffDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
@@ -101,7 +101,7 @@ export default function App() {
                       </ProtectedRoute>
                     } />
                   </Routes>
-                  <Chapter99Solution />
+                  <NongSom />
                 </Router>
               </CartProvider>
             </PinProvider>

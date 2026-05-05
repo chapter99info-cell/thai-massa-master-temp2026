@@ -3,31 +3,41 @@ import { Service } from '../types';
 export const services: Service[] = [
   {
     id: '1',
-    name: 'นวดไทยดั้งเดิม',
-    englishName: 'Traditional Thai Massage',
-    description: 'การนวดทั่วตัวแบบดั้งเดิมโดยใช้เทคนิคการกดและยืดเป็นจังหวะเพื่อเพิ่มความยืดหยุ่นและการไหลเวียนของพลังงาน',
-    englishDescription: 'A traditional full-body massage using rhythmic pressing and stretching techniques to improve flexibility and energy flow.',
+    name: 'นวดไทยยืดเหยียดแผนโบราณ',
+    englishName: 'Traditional Thai Yoga Massage',
+    description: 'ศาสตร์แห่งการยืดเหยียดระดับพรีเมียม! เน้นการดัดดึงและกดจุดเพื่อคืนสมดุลให้ร่างกาย คลายความตึงเครียดของกล้ามเนื้อระดับลึก 🍊',
+    englishDescription: 'Ancient healing art! Focused rhythmic stretching and pressure points to restore balance and melt away deep muscle tension. 🍊',
     standardPrice: 95,
     earlyBirdPrice: 85,
     weekendPrice: 105,
     durationMins: 60,
     category: 'MASSAGE',
-    imageUrl: 'https://picsum.photos/seed/thai-massage/800/600',
+    imageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=800&fit=crop',
     isFeatured: true,
+    postCareTips: [
+      { th: 'ดื่มน้ำอุ่นมากๆ เพื่อขับของเสีย', en: 'Drink plenty of warm water to flush toxins.' },
+      { th: 'เลี่ยงกิจกรรมหนักหลังนวด 2-3 ชม.', en: 'Avoid heavy activity for 2-3 hours.' },
+      { th: 'ประคบอุ่นหากมีอาการระบมกล้ามเนื้อ', en: 'Apply warm compress if you feel muscle soreness.' }
+    ]
   },
   {
     id: '2',
-    name: 'นวดน้ำมันอโรมา',
-    englishName: 'Thai Aroma Oil Massage',
-    description: 'การนวดผ่อนคลายโดยใช้น้ำมันหอมระเหยเพื่อปลอบประโลมประสาทสัมผัสและบรรเทาความตึงเครียดของกล้ามเนื้อ',
-    englishDescription: 'A relaxing massage using essential oils to soothe the senses and relieve muscle tension.',
-    standardPrice: 110,
-    earlyBirdPrice: 99,
-    weekendPrice: 120,
+    name: 'นวดอโรมาน้ำมันหอมระเหยพรีเมียม',
+    englishName: 'Premium Aromatherapy Oil Massage',
+    description: 'สัมผัสความหรูหราด้วยน้ำมันหอมสกัดบริสุทธิ์และหินร้อน ช่วยปลอบประโลมจิตใจและฟื้นฟูผิวพรรณในบรรยากาศแสงสีทองอุ่นๆ 🍊',
+    englishDescription: 'Experience luxury with pure essential oils and hot stones. Soothes the soul and rejuvenates skin in a warm golden atmosphere. 🍊',
+    standardPrice: 115,
+    earlyBirdPrice: 105,
+    weekendPrice: 130,
     durationMins: 60,
     category: 'MASSAGE',
-    imageUrl: 'https://picsum.photos/seed/oil-massage/800/600',
+    imageUrl: 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?q=80&w=800&fit=crop',
     isFeatured: true,
+    postCareTips: [
+      { th: 'ไม่ต้องรีบอาบน้ำ ปล่อยให้น้ำมันซึมเพื่อบำรุงผิว', en: 'Don\'t rush to shower; let the oil nourish your skin.' },
+      { th: 'จิบชาสมุนไพรอุ่นๆ ช่วยผ่อนคลายระบบประสาท', en: 'Sip warm herbal tea to relax your nervous system.' },
+      { th: 'สูดหายใจลึกๆ เพื่อรับประโยชน์จากกลิ่นอโรมา', en: 'Take deep breaths to benefit from the aroma oils.' }
+    ]
   },
   {
     id: '3',
@@ -42,6 +52,11 @@ export const services: Service[] = [
     category: 'FACIAL',
     imageUrl: 'https://picsum.photos/seed/facial/800/600',
     isFeatured: true,
+    postCareTips: [
+      { th: 'งดแต่งหน้าอย่างน้อย 4-6 ชม.', en: 'Avoid makeup for at least 4-6 hours.' },
+      { th: 'หลีกเลี่ยงแสงแดดจัดหลังทำทรีทเมนท์', en: 'Avoid direct sunlight after the treatment.' },
+      { th: 'ใช้ครีมบำรุงผิวที่อ่อนโยนและให้ความชุ่มชื้น', en: 'Apply gentle and hydrating moisturizer.' }
+    ]
   },
   {
     id: '4',
@@ -56,6 +71,11 @@ export const services: Service[] = [
     category: 'SPA PACKAGES',
     imageUrl: 'https://picsum.photos/seed/spa-package/800/600',
     isFeatured: true,
+    postCareTips: [
+      { th: 'แช่เท้าในน้ำอุ่นเพื่อความผ่อนคลายที่ยาวนาน', en: 'Soak feet in warm water for lasting relaxation.' },
+      { th: 'ขยับเขยื้อนนิ้วเท้าเพื่อกระตุ้นการไหลเวียน', en: 'Wiggle your toes to stimulate circulation.' },
+      { th: 'พักผ่อนในบรรยากาศที่เงียบสงบหลังจบทริป', en: 'Rest in a quiet environment after your spa journey.' }
+    ]
   },
   {
     id: '5',
@@ -68,7 +88,12 @@ export const services: Service[] = [
     weekendPrice: 130,
     durationMins: 60,
     category: 'MASSAGE',
-    imageUrl: 'https://picsum.photos/seed/deep-tissue/800/600',
+    imageUrl: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=800',
+    postCareTips: [
+      { th: 'ดื่มน้ำมากๆ เพื่อขับกรดแลคติกที่ถูกบีบออกมา', en: 'Drink plenty of water to flush out released lactic acid.' },
+      { th: 'หากมีรอยเขียวช้ำหรือระบมเล็กน้อยเป็นเรื่องปกติ', en: 'Minor bruising or soreness is normal after deep work.' },
+      { th: 'ยืดกล้ามเนื้อเบาๆ เพื่อรักษาความยืดหยุ่น', en: 'Perform gentle stretches to maintain flexibility.' }
+    ]
   },
   {
     id: '6',

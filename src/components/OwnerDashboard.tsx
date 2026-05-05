@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { therapists } from '../data/therapists';
 import { services } from '../data/services';
+import CRMSystem from './CRMSystem';
 import { StaffStatus, QueueItem, AlertEntry, AttendanceEntry, Bed, Gender } from '../types';
 import { storeConfig, getAppSettings, saveAppSettings, INITIAL_BEDS } from '../config';
 import { cn } from '../lib/utils';
@@ -81,7 +82,7 @@ export default function OwnerDashboard() {
   const [alerts, setAlerts] = useState<AlertEntry[]>([
     { id: '1', therapistId: 't1', therapistName: 'พี่นก', issue: 'น้ำมันหมด', timestamp: new Date().toISOString(), status: 'NEW' }
   ]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'summary' | 'alerts' | 'staff' | 'security'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'summary' | 'alerts' | 'staff' | 'security' | 'crm'>('overview');
   const [isAssigningBed, setIsAssigningBed] = useState(false);
   const [assigningData, setAssigningData] = useState<{ therapistId: string; bookingId: string } | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceEntry[]>([
@@ -511,6 +512,10 @@ export default function OwnerDashboard() {
   const summary = calculateSummary();
   const pendingAmount = calculatePending();
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('owner-tab-change', { detail: activeTab }));
+  }, [activeTab]);
+
   const handleVoidTransaction = (id: string) => {
     setSalesLog(prev => prev.map(sale => 
       sale.id === id ? { ...sale, type: 'VOID', amount: 0 } : sale
@@ -598,6 +603,18 @@ export default function OwnerDashboard() {
                 {newAlertsCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-800" />
                 )}
+              </button>
+            )}
+            {storeConfig.packageTier >= 3 && (
+              <button 
+                onClick={() => setActiveTab('crm')}
+                className={cn(
+                  "px-6 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+                  activeTab === 'crm' ? "bg-primary text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+                )}
+              >
+                <Users size={16} />
+                CRM
               </button>
             )}
             {settings.showStaffClockInOut && (
@@ -1233,6 +1250,21 @@ export default function OwnerDashboard() {
                     </div>
                   )}
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* CRM Tab */}
+          {activeTab === 'crm' && (
+            <motion.div 
+              key="crm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute inset-0 p-4 md:p-10 overflow-y-auto bg-slate-50"
+            >
+              <div className="max-w-6xl mx-auto">
+                <CRMSystem />
               </div>
             </motion.div>
           )}

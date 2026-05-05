@@ -12,10 +12,10 @@ export interface StoreConfig {
 }
 
 export const storeConfig: StoreConfig = {
-  storeName: 'Mira Thai Massage Altona',
-  primaryColor: '#4A90E2',
-  accentColor: '#E1D4B6',
-  backgroundColor: '#FDFDF2',
+  storeName: 'Premium Thai Wellness',
+  primaryColor: '#0EA5E9',
+  accentColor: '#D4AF37',
+  backgroundColor: '#F8FAFC',
   abn: '12 345 678 901',
   address: 'Level 1/76 Pier Street, Altona 3018',
   phone: '0466 992 456',
@@ -52,9 +52,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   managerPin: '4444',
   masterPin: '7777',
   brandLogoUrl: '',
-  heroVideoUrl: '',
-  heroImageUrl: '',
-  shopDescription: '',
+  heroVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-massage-therapist-working-on-a-client-4444-large.mp4',
+  heroImageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=2070&auto=format&fit=crop',
+  shopDescription: 'Experience True Serenity - Premium Wellness in Altona',
 };
 
 export const getAppSettings = (): AppSettings => {

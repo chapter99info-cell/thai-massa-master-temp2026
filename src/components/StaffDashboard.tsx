@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock as LockIcon, Play, CheckCircle, Clock, User, DollarSign, LogOut, RefreshCw, Heart, X, AlertTriangle, LogIn, ChevronDown } from 'lucide-react';
+import { Lock as LockIcon, Play, CheckCircle, Clock, User, DollarSign, LogOut, RefreshCw, Sparkles, X, AlertTriangle, LogIn, ChevronDown } from 'lucide-react';
 import { storeConfig, getAppSettings } from '../config';
 import { StaffSession, AttendanceEntry, AlertEntry } from '../types';
 import { cn } from '../lib/utils';
@@ -26,7 +26,7 @@ export default function StaffDashboard() {
   const settings = getAppSettings();
   const [sessions, setSessions] = useState<StaffSession[]>(INITIAL_SESSIONS);
   const [completedSessions, setCompletedSessions] = useState<StaffSession[]>([]);
-  const [miraMessage, setMiraMessage] = useState<string | null>(t('พี่ๆ หมอคะ งานใหม่จะเด้งขึ้นมาตรงนี้นะคะ พอแขกพร้อมแล้วอย่าลืมกดปุ่ม "เริ่มงาน" นะคะ หนูจะได้ช่วยจับเวลาให้ค่ะ พอจบงานหนูจะรีบแจ้งคุณป้าให้ไปเก็บเงินให้ทันทีเลยค่ะ!', 'Hi therapists! New jobs will appear here. When the guest is ready, don\'t forget to click "Start" so I can help keep time. When finished, I\'ll notify the manager to collect payment immediately!'));
+  const [somMessage, setSomMessage] = useState<string | null>(t('พี่ๆ หมอคะ งานใหม่จะเด้งขึ้นมาตรงนี้นะคะ พอแขกพร้อมแล้วอย่าลืมกดปุ่ม "เริ่มงาน" นะคะ น้องส้มจะได้ช่วยจับเวลาให้ค่ะ พอจบงานน้องส้มจะรีบแจ้งพี่เจ้าของร้านให้ไปเก็บเงินให้ทันทีเลยค่ะ! 🍊', 'Hi therapists! New jobs will appear here. When the guest is ready, don\'t forget to click "Start" so I can help keep time. When finished, I\'ll notify the manager to collect payment immediately! 🍊'));
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [showClockModal, setShowClockModal] = useState(false);
@@ -52,7 +52,7 @@ export default function StaffDashboard() {
   const handleClockInOut = (action: 'CLOCK_IN' | 'CLOCK_OUT') => {
     setClockAction(action);
     setShowClockModal(true);
-    setMiraMessage(t('พี่ๆ คะ เลือกชื่อตัวเองแล้วกดตกลงได้เลยค่ะ หนูจะจดเวลาเข้างานไว้ให้คุณป้าดูตอนจ่ายตังค์นะคะ ใครมาสายหนูฟ้องคุณป้าจริงๆ ด้วยนะ (หยอกๆ ค่ะ)', 'Therapists, please select your name and click confirm. I\'ll record your time for the owner to see. If you\'re late, I might tell on you! (Just kidding!)'));
+    setSomMessage(t('พี่ๆ คะ เลือกชื่อตัวเองแล้วกดตกลงได้เลยค่ะ น้องส้มจะจดเวลาเข้างานไว้ให้พี่เจ้าของร้านดูตอนจ่ายตังค์นะคะ 🍊', 'Therapists, please select your name and click confirm. I\'ll record your time for the owner to see. 🍊'));
   };
 
   const confirmClockAction = async () => {
@@ -65,12 +65,12 @@ export default function StaffDashboard() {
     const lastEntry = attendanceLogs.filter(l => l.therapistId === selectedStaffId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
     
     if (clockAction === 'CLOCK_IN' && lastEntry && lastEntry.type === 'CLOCK_IN') {
-      setMiraMessage(t('คุณได้ลงเวลาเข้างานไปแล้วค่ะ', 'You have already clocked in.'));
+      setSomMessage(t('พี่ลงเวลาเข้างานไปแล้วนี่นา... ลองดูอีกทีนะคะ 🍊', 'You have already clocked in. 🍊'));
       return;
     }
 
     if (clockAction === 'CLOCK_OUT' && (!lastEntry || lastEntry.type === 'CLOCK_OUT')) {
-      setMiraMessage(t('คุณยังไม่ได้ลงเวลาเข้างานค่ะ', 'You have not clocked in yet.'));
+      setSomMessage(t('พี่ยังไม่ได้ลงเวลาเข้างานเลยค่ะ 🍊', 'You have not clocked in yet. 🍊'));
       return;
     }
 
@@ -101,13 +101,13 @@ export default function StaffDashboard() {
       
       if (clockAction === 'CLOCK_IN') {
         setIsClockedIn(true);
-        setMiraMessage(t('ลงชื่อเข้างานเรียบร้อยค่ะ วันนี้สู้ๆ นะคะคุณพี่หมอ', 'Clocked in successfully. Have a great day!'));
+        setSomMessage(t('ลงชื่อเข้างานเรียบร้อยค่ะ วันนี้สู้ๆ นะคะพี่หมอ น้องส้มเป็นกำลังใจให้ค่ะ! 🍊', 'Clocked in successfully. Have a great day! 🍊'));
       } else {
         setIsClockedIn(false);
-        setMiraMessage(t('ลงชื่อออกให้แล้วค่ะ เดินทางกลับปลอดภัยนะคะคุณพี่', 'Clocked out successfully. Have a safe trip home!'));
+        setSomMessage(t('น้องส้มลงชื่อออกให้แล้วค่ะ เดินทางกลับปลอดภัยนะคะพี่ 🍊', 'Clocked out successfully. Have a safe trip home! 🍊'));
       }
     } catch (error) {
-      setMiraMessage(t('ขออภัยค่ะ ระบบขัดข้องเล็กน้อย Chapter99 Solution (by น้องมิรา) กำลังพยายามกู้คืนข้อมูลให้นะคะ ลองใหม่อีกครั้งค่ะ', 'Sorry, system error. Chapter99 Solution (by Nong Mira) is trying to recover. Please try again.'));
+      setSomMessage(t('ขออภัยค่ะ ระบบขัดข้องเล็กน้อย น้องส้มกำลังพยายามกู้คืนข้อมูลให้นะคะ ลองใหม่อีกครั้งค่ะ 🍊', 'Sorry, system error. Nong Som is trying to recover. Please try again. 🍊'));
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +124,7 @@ export default function StaffDashboard() {
     };
     console.log('Logging to ALERTS:', alert);
     setShowIssueModal(false);
-    setMiraMessage(t('หนูแจ้งปัญหาให้คุณพี่เจ้าของร้านทราบแล้วนะคะ ไม่ต้องกังวลค่ะ', "I've notified the owner about the issue. Don't worry!"));
+    setSomMessage(t('น้องส้มแจ้งปัญหาให้พี่เจ้าของร้านทราบแล้วนะคะ ไม่ต้องกังวลค่ะ 🍊', "I've notified the owner about the issue. Don't worry! 🍊"));
   };
 
   const startSession = (id: string) => {
@@ -145,7 +145,7 @@ export default function StaffDashboard() {
           bedType: s.bedType
         });
 
-        setMiraMessage(t(`คุณพี่หมอคะ งานใหม่ประจำที่ เตียง ${s.bedNumber} นะคะ เตรียมเตียงตามสีที่หนูโชว์ไว้ได้เลยค่ะ`, `New job at Bed ${s.bedNumber}. Please prepare the bed according to the color shown.`));
+        setSomMessage(t(`พี่หมอคะ งานใหม่ประจำที่ เตียง ${s.bedNumber} นะคะ เตรียมเตียงรอแขกได้เลยค่าา 🍊`, `New job at Bed ${s.bedNumber}. Please prepare the bed. 🍊`));
         return { ...s, status: 'active', startTime, endTime, remainingSeconds: s.durationMins * 60 };
       }
       return s;
@@ -156,7 +156,7 @@ export default function StaffDashboard() {
     const session = sessions.find(s => s.id === id);
     if (!session) return;
 
-    setMiraMessage(t('นวดเสร็จแล้ว หนูแจ้งคุณป้าให้ไปเก็บเงินที่เตียงแล้วนะคะ! พักผ่อนก่อนนะคะคุณพี่', "Massage finished! I've notified the manager to collect payment at the bed. Please take a rest."));
+    setSomMessage(t('นวดเสร็จแล้ว! เดี๋ยวส้มแจ้งพี่เจ้าของร้านให้ไปเก็บเงินที่เตียงให้นะคะ! พักผ่อนก่อนนะคะพี่หมอ 🍊', "Massage finished! I've notified the manager to collect payment at the bed. Please take a rest. 🍊"));
     
     // Signal to Manager Dashboard (Simulation)
     console.log('SIGNAL_TO_MANAGER:', {
@@ -198,7 +198,7 @@ export default function StaffDashboard() {
           
           // 5 minute reminder
           if (newRemaining === 300) {
-            setMiraMessage(t('เหลืออีก 5 นาทีจะหมดเวลาแล้วนะคะ เตรียมตัวนวดประคบหรือเช็ดตัวลูกค้าได้เลยค่ะ', '5 minutes left! Please prepare to finish the treatment.'));
+            setSomMessage(t('เหลืออีก 5 นาทีจะหมดเวลาแล้วนะคะ เตรียมตัวนวดประคบหรือเช็ดตัวลูกค้าได้เลยค่ะ 🍊', '5 minutes left! Please prepare to finish the treatment. 🍊'));
           }
           
           return { ...s, remainingSeconds: newRemaining };
@@ -212,12 +212,12 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen bg-cream p-6 sm:p-10 space-y-10">
       <AnimatePresence>
-        {isLoading && <LoadingOverlay message={t('Chapter99 Solution (by น้องมิรา) กำลังบันทึกข้อมูลให้คุณพี่อยู่นะคะ...', 'Chapter99 Solution (by Nong Mira) is saving your data...')} />}
+        {isLoading && <LoadingOverlay message={t('น้องส้ม (Nong Som) กำลังบันทึกข้อมูลให้พี่อยู่นะคะ... 🍊', 'Nong Som is saving your data... 🍊')} />}
       </AnimatePresence>
       <header className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border border-primary/5">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl gold-gradient flex items-center justify-center shadow-lg">
-            <Heart size={24} className="text-white fill-current" />
+            <Sparkles size={24} className="text-white fill-current" />
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-charcoal leading-tight">{storeConfig.storeName}</h1>
@@ -271,24 +271,24 @@ export default function StaffDashboard() {
         </div>
       </header>
 
-      {/* Chapter99 Solution (by Nong Mira) Action Prompt (Toast Notification) */}
+      {/* Nong Som Action Prompt (Toast Notification) */}
       <AnimatePresence>
-        {miraMessage && (
+        {somMessage && (
           <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="fixed top-4 left-4 right-4 md:left-auto md:right-8 md:w-[400px] z-[200] bg-primary/90 backdrop-blur-md border border-white/20 p-4 md:p-6 rounded-2xl md:rounded-[2rem] flex items-center gap-4 shadow-2xl"
+            className="fixed top-4 left-4 right-4 md:left-auto md:right-8 md:w-[400px] z-[200] bg-orange-500/90 backdrop-blur-md border border-white/20 p-4 md:p-6 rounded-2xl md:rounded-[2rem] flex items-center gap-4 shadow-2xl"
           >
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg flex-shrink-0">
-              <Heart size={20} className="md:size-24" fill="currentColor" />
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center text-orange-500 shadow-lg flex-shrink-0">
+              <Sparkles size={20} className="md:size-24" fill="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-xs md:text-sm leading-tight font-sans break-words">{miraMessage}</p>
-              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Chapter99 Solution (by Nong Mira)</p>
+              <p className="text-white font-bold text-xs md:text-sm leading-tight font-sans break-words">{somMessage}</p>
+              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Nong Som (น้องส้ม) 🍊</p>
             </div>
             <button 
-              onClick={() => setMiraMessage(null)}
+              onClick={() => setSomMessage(null)}
               className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-colors"
             >
               <X size={18} />
@@ -333,10 +333,18 @@ export default function StaffDashboard() {
                   className={cn(
                     "p-4 rounded-[2rem] shadow-lg border-2 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full min-h-[280px]",
                     session.status === 'active' 
-                      ? "bg-white border-orange-400 ring-4 ring-orange-50" 
-                      : "bg-white border-primary/10"
+                      ? "bg-white border-orange-500 shadow-orange-100 ring-4 ring-orange-50/50" 
+                      : "bg-white border-slate-100 hover:border-emerald-200 shadow-slate-100"
                   )}
                 >
+                  {/* Status Indicator */}
+                  <div className="absolute top-0 left-0 w-full h-1">
+                    <div className={cn(
+                      "h-full w-full",
+                      session.status === 'active' ? "bg-orange-500" : 
+                      session.status === 'pending' ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+                    )} />
+                  </div>
                   {/* Bed Badge */}
                   {session.bedNumber && (
                     <div className={cn(
@@ -439,18 +447,18 @@ export default function StaffDashboard() {
                     {session.status === 'pending' ? (
                       <button 
                         onClick={() => startSession(session.id)}
-                        className="w-full py-3 bg-green-500 text-white rounded-2xl font-black text-sm shadow-md shadow-green-100 flex items-center justify-center gap-2 hover:bg-green-600 transition-all active:scale-95 uppercase tracking-widest"
+                        className="w-full py-4 bg-emerald-500 text-white rounded-[1.5rem] font-black text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all active:scale-95 uppercase tracking-widest"
                       >
-                        <Play size={16} fill="currentColor" />
-                        <span>{t('เริ่มงาน / Start', 'Start')}</span>
+                        <Play size={18} fill="currentColor" />
+                        <span>{t('เริ่มนวด / Start', 'Start')}</span>
                       </button>
                     ) : (
                       <button 
                         onClick={() => finishSession(session.id)}
-                        className="w-full py-3 bg-orange-500 text-white rounded-2xl font-black text-sm shadow-md shadow-orange-100 flex items-center justify-center gap-2 hover:bg-orange-600 transition-all active:scale-95 uppercase tracking-widest"
+                        className="w-full py-4 bg-orange-500 text-white rounded-[1.5rem] font-black text-sm shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 hover:bg-orange-600 transition-all active:scale-95 uppercase tracking-widest"
                       >
-                        <CheckCircle size={16} />
-                        <span>{t('จบงาน / Finish', 'Finish')}</span>
+                        <CheckCircle size={18} />
+                        <span>{t('นวดเสร็จ / Finish', 'Finish')}</span>
                       </button>
                     )}
                   </div>
@@ -465,8 +473,8 @@ export default function StaffDashboard() {
               <CheckCircle size={40} />
             </div>
             <div className="space-y-1">
-              <h3 className="text-2xl font-serif font-bold text-charcoal">{t('จบงานครบแล้วค่ะ', 'All jobs completed!')}</h3>
-              <p className="text-accent/60 text-sm">{t('คุณพี่หมอเก่งมากเลยค่ะ พักผ่อนก่อนนะคะ', 'Great job! Please take a rest.')}</p>
+              <h3 className="text-2xl font-serif font-bold text-charcoal">{t('จบงานครบแล้วค่ะพี่!', 'All jobs completed!')}</h3>
+              <p className="text-accent/60 text-sm">{t('พี่ๆ หมอเก่งมากเลยค่ะ พักผ่อนก่อนนะคะ 🍊', 'Great job! Please take a rest. 🍊')}</p>
             </div>
             <button 
               onClick={() => {
@@ -702,7 +710,7 @@ export default function StaffDashboard() {
                     <AlertTriangle size={32} />
                   </div>
                   <h3 className="text-2xl font-serif font-bold text-charcoal">{t('แจ้งปัญหา / Report Issue', 'Report Issue')}</h3>
-                  <p className="text-accent/60 text-xs">{t('เลือกปัญหาที่ต้องการแจ้งคุณพี่เจ้าของร้านนะคะ', 'Select the issue you want to report.')}</p>
+                  <p className="text-accent/60 text-xs">{t('เลือกปัญหาที่ต้องการแจ้งพี่เจ้าของร้านได้เลยนะคะ 🍊', 'Select the issue you want to report.')}</p>
                 </div>
 
                   <div className="grid grid-cols-1 gap-3">

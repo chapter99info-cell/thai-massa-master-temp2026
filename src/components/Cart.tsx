@@ -23,7 +23,8 @@ import { useBookings } from '../contexts/BookingContext';
 import { storeConfig } from '../config';
 import ServiceImage from './ServiceImage';
 import { useLanguage } from '../contexts/LanguageContext';
-import { cn } from '../lib/utils';
+import { Link } from 'react-router-dom';
+import { cn, formatCurrency } from '../lib/utils';
 
 type CheckoutStep = 'summary' | 'details' | 'payment' | 'success';
 
@@ -53,11 +54,16 @@ export default function Cart() {
 
   const handleNextStep = () => {
     if (step === 'summary') {
+      const hasMassage = cart.some(item => item.category === 'MASSAGE');
       const hasHotStone = cart.some(item => item.name.includes('Hot Stone') || (item.englishName?.includes('Hot Stone') ?? false));
-      if (storeConfig.packageTier >= 3 && !hasHotStone) {
+
+      // Case: Has massage but no Hot Stone (Premium Perk)
+      if (storeConfig.packageTier >= 3 && hasMassage && !hasHotStone) {
+        setSomMessage(t('พี่ๆ คะ ปวดเมื่อยตัวมานาน รับหินร้อนเพิ่มมั้ยคะพี่ สบายตัวขึ้นเยอะเลยค่ะ! 🍊', 'Nong Som noticed you have muscle tension! Add some Hot Stone therapy to melt that tension away! 🍊'));
         setShowUpsell(true);
         return;
       }
+
       setStep('details');
     } else if (step === 'details') {
       setStep('payment');
@@ -104,7 +110,9 @@ export default function Cart() {
     }
   };
 
-  const addHotStoneUpsell = () => {
+  const [somMessage, setSomMessage] = useState<string | null>(null);
+
+  const addUpsellItem = () => {
     const hotStoneService = {
       id: 'upsell-hot-stone',
       name: 'นวดหินร้อน 15 นาที',
@@ -116,7 +124,7 @@ export default function Cart() {
       weekendPrice: 15,
       durationMins: 15,
       category: 'ADD_ON',
-      imageUrl: 'https://picsum.photos/seed/hot-stone/400/400',
+      imageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=400&fit=crop',
     };
     addToCart(hotStoneService as any, 15);
     setShowUpsell(false);
@@ -206,7 +214,7 @@ export default function Cart() {
                       </div>
                     </div>
                     <div className="pt-1">
-                      <span className="text-primary font-bold">${item.selectedPrice}</span>
+                      <span className="text-primary font-bold">{formatCurrency(item.selectedPrice)}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -216,8 +224,9 @@ export default function Cart() {
             <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-primary/10 space-y-6">
               <div className="flex justify-between text-primary font-bold text-xl">
                 <span>Total Amount</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>{formatCurrency(totalPrice)}</span>
               </div>
+
               <button 
                 onClick={handleNextStep}
                 className="w-full py-4 gold-gradient text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity uppercase tracking-widest"
@@ -572,22 +581,23 @@ export default function Cart() {
               className="relative w-full max-w-sm bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border border-primary/20"
             >
               <div className="p-8 text-center space-y-6">
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary animate-pulse">
+                <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto text-orange-500 animate-pulse relative">
                   <Sparkles size={40} />
+                  <div className="absolute -top-1 -right-1 bg-white rounded-full p-1 shadow-sm">🍊</div>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-serif font-bold text-charcoal italic">{t('เพิ่มประสบการณ์ของคุณ?', 'Enhance Your Experience?')}</h3>
-                  <p className="text-accent/70 text-sm leading-relaxed">
-                    {t('คุณต้องการเพิ่ม', 'Would you like to add a')} <span className="text-primary font-bold">{t('นวดหินร้อน 15 นาที', '15-min Hot Stone therapy')}</span> {t('ในราคาเพียง', 'for only')} <span className="text-primary font-bold">$15</span>?
+                  <h3 className="text-2xl font-serif font-bold text-navy italic">{t('น้องส้มมีข้อเสนอดีๆ ค่ะ!', 'Nong Som has a special offer!')}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    {somMessage || t('รับอะไรเพิ่มมั้ยคะพี่?', 'Would you like to add something else, P\'?')}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   <button 
-                    onClick={addHotStoneUpsell}
+                    onClick={() => addUpsellItem()}
                     className="w-full py-4 gold-gradient text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity uppercase tracking-widest"
                   >
                     <Plus size={20} />
-                    {t('ใช่ เพิ่มในการจอง', 'Yes, Add to Booking')}
+                    {t('ใช่ เพิ่มเลยค่ะ!', 'Yes, Add it!')} ( {formatCurrency(15)} )
                   </button>
                   <button 
                     onClick={() => {

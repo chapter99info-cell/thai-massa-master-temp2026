@@ -28,13 +28,18 @@ import {
   Camera,
   Upload,
   LogOut,
-  Star
+  Star,
+  QrCode,
+  ShieldCheck,
+  Download,
+  Sparkles
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { therapists } from '../data/therapists';
 import { services } from '../data/services';
 import { StaffStatus, QueueItem, AlertEntry, AttendanceEntry, Bed } from '../types';
 import { storeConfig, getAppSettings, INITIAL_BEDS } from '../config';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import { usePin } from '../contexts/PinContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBookings } from '../contexts/BookingContext';
@@ -78,7 +83,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     therapistId: 'none'
   });
   const [formError, setFormError] = useState<string | null>(null);
-  const [miraMessage, setMiraMessage] = useState<string | null>(null);
+  const [somMessage, setSomMessage] = useState<string | null>(null);
   const [salesLog, setSalesLog] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<AlertEntry[]>([
     { id: '1', therapistId: 't1', therapistName: 'พี่นก', issue: 'น้ำมันหมด', timestamp: new Date().toISOString(), status: 'NEW' }
@@ -89,7 +94,13 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   const [payIdSlip, setPayIdSlip] = useState<string | null>(null);
   const [isStaffStatusOpen, setIsStaffStatusOpen] = useState(false);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'control' | 'payments'>('control');
+  const [activeTab, setActiveTab] = useState<'control' | 'payments' | 'calendar' | 'crm'>('control');
+  const [customers, setCustomers] = useState<any[]>([
+    { id: 'c1', name: 'John Doe', visits: 12, lastVisit: '2026-03-01', birthday: '1990-05-05' },
+    { id: 'c2', name: 'Jane Smith', visits: 1, lastVisit: '2026-05-01', birthday: '1995-10-10' },
+    { id: 'c3', name: 'Bob Wilson', visits: 5, lastVisit: '2025-12-01', birthday: '1985-01-01' },
+    { id: 'c4', name: 'Alice Brown', visits: 15, lastVisit: '2026-04-20', birthday: '2000-05-05' },
+  ]);
 
   const newAlertsCount = alerts.filter(a => a.status === 'NEW').length;
 
@@ -143,17 +154,21 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     e.preventDefault();
     
     if (!newWalkIn.customerName.trim()) {
-      setFormError(t('ป้าลืมใส่ชื่อลูกค้าหรือเปล่าคะ? หนูรบกวนตรวจดูอีกนิดนึงนะคะ', 'Did you forget the customer name? Please double check.'));
+      setFormError(t('พี่ลืมใส่ชื่อลูกค้าหรือเปล่าคะ? น้องส้มรบกวนตรวจดูอีกนิดนึงนะคะ 🍊', 'Did you forget the customer name? Please double check. 🍊'));
       return;
     }
 
     if (newWalkIn.therapistId === 'none') {
-      setFormError(t('กรุณาเลือกคุณพี่หมอด้วยนะคะ', 'Please select a therapist.'));
+      const suggestion = getSmartQueueSuggestion();
+      if (suggestion) {
+        setSomMessage(suggestion);
+      }
+      setFormError(t('กรุณาเลือกพี่หมอด้วยนะคะ 🍊', 'Please select a therapist. 🍊'));
       return;
     }
 
     if (!newWalkIn.bedId) {
-      setFormError(t('กรุณาเลือกเตียงให้คุณพี่หมอด้วยนะคะ', 'Please select a bed.'));
+      setFormError(t('กรุณาเลือกเตียงให้พี่หมอด้วยนะคะ 🍊', 'Please select a bed. 🍊'));
       return;
     }
 
@@ -173,6 +188,24 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     }
 
     proceedWithQuickAdd(newWalkIn);
+  };
+
+  const getSmartQueueSuggestion = () => {
+    const activeSessions = staff.filter(s => s.status === 'Working' || s.status === 'PaymentPending');
+    const availableStaff = staff.filter(s => s.status === 'Available');
+    
+    if (availableStaff.length === 0 && activeSessions.length > 0) {
+      // Find the one that finishes soonest
+      const sortedByTime = [...activeSessions].sort((a, b) => (a.remainingSeconds || 0) - (b.remainingSeconds || 0));
+      const nextOne = sortedByTime[0];
+      const minsLeft = nextOne.remainingSeconds ? Math.ceil(nextOne.remainingSeconds / 60) : 0;
+      
+      return t(
+        `ขณะนี้พี่ๆ หมอยังติดภารกิจอยู่ทุกคนเลยค่ะ แย่จัง... 🍊 แต่ไม่ต้องห่วงนะคะ! พี่${nextOne.therapistName} จะว่างในอีกประมาณ ${minsLeft} นาทีค่ะ พี่อยากให้น้องส้มร่างข้อความตอบปฏิเสธแบบน่ารักๆ พร้อมเสนอเวลาให้ลูกค้ามั้ยคะ?`,
+        `All therapists are currently busy... 🍊 Don't worry! ${nextOne.therapistName} will be available in about ${minsLeft} mins. Would you like me to draft a polite message with this alternative time for the customer?`
+      );
+    }
+    return null;
   };
 
   const proceedWithQuickAdd = (data: any) => {
@@ -201,6 +234,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
           remainingSeconds: newBooking.durationMins * 60,
           currentCustomer: newBooking.customerName,
           currentService: newBooking.serviceName,
+          currentServiceId: service.id,
           currentPrice: newBooking.price,
           currentBedNumber: bed.number,
           currentBedType: bed.type,
@@ -211,7 +245,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     }));
 
     updateBedStatus(bed.id, 'In Use');
-    setMiraMessage(t(`คุณพี่คะ หนูใส่สีส้มไว้ที่เตียงที่นวดเสร็จแล้วแต่ยังไม่ได้เก็บเงินนะคะ พอคุณพี่ได้รับเงินแล้วกด "ยืนยันการชำระเงิน" หนูจะเปลี่ยนเป็นสีเขียวให้ทันทีค่ะ`, `I've marked the bed orange for unpaid sessions. Once you receive payment and click "Confirm Payment", I'll turn it green.`));
+    setSomMessage(t(`คุณพี่คะ หนูใส่สีส้มไว้ที่เตียงที่นวดเสร็จแล้วแต่ยังไม่ได้เก็บเงินนะคะ พอคุณพี่ได้รับเงินแล้วกด "ยืนยันการชำระเงิน" หนูจะเปลี่ยนเป็นสีเขียวให้ทันทีค่ะ`, `I've marked the bed orange for unpaid sessions. Once you receive payment and click "Confirm Payment", I'll turn it green.`));
     
     setIsQuickAddOpen(false);
     setFormError(null);
@@ -266,9 +300,9 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     setLastSaleDate(now);
     
     if (method === 'PayID') {
-      setMiraMessage(t(`บันทึกยอด PayID เรียบร้อย (เวลา ${exactTime}) หนูจดวินาทีไว้ให้ป้าเช็คแล้วค่ะ!`, `PayID payment recorded (Time: ${exactTime}). I've noted the exact second for the owner to check!`));
+      setSomMessage(t(`บันทึกยอด PayID เรียบร้อย (เวลา ${exactTime}) น้องส้มจดวินาทีไว้ให้พี่เช็คแล้วค่ะ! 🍊`, `PayID payment recorded (Time: ${exactTime}). I've noted the exact second for the owner to check! 🍊`));
     } else {
-      setMiraMessage(t('บันทึกการชำระเงินเรียบร้อยค่ะ!', 'Payment recorded successfully!'));
+      setSomMessage(t('บันทึกการชำระเงินเรียบร้อยแล้วค่ะพี่! 🍊', 'Payment recorded successfully! 🍊'));
     }
     
     // Post-Action Loop
@@ -352,7 +386,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     setHicapsData({ claim: 0, gap: 0 });
     setPayIdSlip(null);
     setShowReceipt(false);
-    setMiraMessage(t('จ่ายเงินเรียบร้อยแล้วค่ะ เตียงพร้อมรับแขกใหม่แล้ว!', 'Payment successful! The bed is now vacant and ready for the next customer.'));
+    setSomMessage(t('จ่ายเงินเรียบร้อยแล้วค่ะพี่! เตียงพร้อมรับแขกใหม่แล้วนะคะ 🍊', 'Payment successful! The bed is now vacant and ready for the next customer. 🍊'));
   };
 
   const toggleBreak = (therapistId: string) => {
@@ -370,109 +404,121 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0E17] text-slate-200 flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-pearl text-navy flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-800/50 px-8 py-4 flex justify-between items-center shrink-0 z-40 sticky top-0">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30 shadow-lg rotate-3">
-            <LayoutGrid size={28} />
+      <header className="bg-ocean/90 backdrop-blur-2xl border-b border-white/20 px-8 py-5 flex justify-between items-center shrink-0 z-40 sticky top-0 shadow-2xl">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white border border-white/30 shadow-xl rotate-3 scale-110">
+            <LayoutGrid size={32} />
           </div>
           <div className="hidden md:block">
-            <h1 className="text-xl font-serif font-bold text-white tracking-tight">{storeConfig.storeName}</h1>
-            <p className="text-slate-500 uppercase tracking-[0.2em] text-[8px] font-bold">
-              {t('Manager POS / พนักงานคุมร้าน', 'Manager POS')}
+            <h1 className="text-2xl font-serif font-black text-white tracking-tight italic leading-none">{storeConfig.storeName}</h1>
+            <p className="text-white/60 uppercase tracking-[0.5em] text-[10px] font-black mt-1">
+              {t('Manager Control Hub • Ocean Breeze', 'Premium Management Solution')}
             </p>
           </div>
         </div>
 
         {/* Tab Navigation - Center */}
-        <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-slate-800 shadow-inner">
+        <div className="flex bg-white/10 p-1.5 rounded-[2.5rem] border border-white/20 shadow-2xl backdrop-blur-xl">
           <button
             onClick={() => setActiveTab('control')}
             className={cn(
-              "px-6 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
               activeTab === 'control' 
-                ? "bg-primary text-white shadow-lg" 
-                : "text-slate-400 hover:text-white"
+                ? "bg-gold text-navy shadow-2xl scale-105" 
+                : "text-white/50 hover:text-white"
             )}
           >
-            <LayoutGrid size={16} />
-            <span>{t('🛏️ Control Board', 'Control Board')}</span>
+            <LayoutGrid size={18} />
+            <span>{t('🛏️ Board', 'Control')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={cn(
+              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+              activeTab === 'calendar' 
+                ? "bg-gold text-navy shadow-2xl scale-105" 
+                : "text-white/50 hover:text-white"
+            )}
+          >
+            <Clock size={18} />
+            <span>{t('📅 Calendar', 'Staff')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('crm')}
+            className={cn(
+              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+              activeTab === 'crm' 
+                ? "bg-gold text-navy shadow-2xl scale-105" 
+                : "text-white/50 hover:text-white"
+            )}
+          >
+            <Users size={18} />
+            <span>{t('👥 CRM', 'Guests')}</span>
           </button>
           <button
             onClick={() => setActiveTab('payments')}
             className={cn(
-              "px-6 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
               activeTab === 'payments' 
-                ? "bg-primary text-white shadow-lg" 
-                : "text-slate-400 hover:text-white"
+                ? "bg-gold text-navy shadow-2xl scale-105" 
+                : "text-white/50 hover:text-white"
             )}
           >
-            <DollarSign size={16} />
-            <span>{t('💰 Today\'s Payments', 'Today\'s Payments')}</span>
+            <DollarSign size={18} />
+            <span>{t('💰 Sales', 'Revenue')}</span>
           </button>
         </div>
         
         <div className="flex items-center gap-4">
           <button 
             onClick={() => {
-              setMiraMessage(t('พี่ๆ คะ... ถ้ามีลูกค้าใหม่มาถึงร้าน พี่กดปุ่มนี้แล้วยื่น iPad ให้แขกกรอกประวัติได้เลยนะคะ ข้อมูลสุขภาพและประกันจะถูกเก็บเข้าระบบดิจิทัลทันที ไม่ต้องใช้กระดาษให้รกแล้วค่ะ!', 'P\'s... If a new customer arrives, press this button and hand the iPad to the guest. Health and insurance data will be saved digitally immediately!'));
+              setSomMessage(t('พี่ค่ะ ยื่นหน้าจอนี้ให้ลูกค้าลงทะเบียนได้เลยนะคะ ข้อมูลสุขภาพลูกค้าจะไหลเข้าระบบ CRM น้องส้มสวยๆ เลยค่ะ! 🍊', 'P\'... Hand this to the customer for registration. Their health data will sync perfectly to CRM! 🍊'));
               setIsIntakeOpen(true);
             }}
-            className="flex items-center gap-2 px-6 h-12 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-900/20"
+            className="flex items-center gap-3 px-8 h-14 bg-white/20 text-white rounded-[2rem] font-black border border-white/30 hover:bg-white hover:text-ocean transition-all shadow-2xl backdrop-blur-md"
           >
-            <FileText size={18} />
-            <span className="text-[11px] uppercase tracking-widest hidden lg:inline">📋 {t('New Client / ลงทะเบียนลูกค้าใหม่', 'New Client Intake')}</span>
-            <span className="text-[11px] uppercase tracking-widest lg:hidden">📋 New Client</span>
-          </button>
-
-          <button 
-            onClick={() => setIsStaffStatusOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 hover:bg-indigo-500/20 transition-all shadow-lg"
-          >
-            <Users size={16} />
-            <span className="text-[10px] uppercase tracking-widest hidden lg:inline">👥 {t('จัดการสถานะ/พักเบรก', 'Staff Status')}</span>
-            <span className="text-[10px] uppercase tracking-widest lg:hidden">👥 Status</span>
+            <FileText size={20} />
+            <span className="text-[10px] uppercase tracking-[0.3em] hidden lg:inline">{t('New Guest', 'New Guest Intake')}</span>
           </button>
 
           <button 
             onClick={() => setShowAlerts(true)}
-            className="relative w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all border border-slate-700"
+            className="relative w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white hover:text-ocean transition-all border border-white/30 shadow-2xl shadow-navy/20"
           >
-            <Bell size={20} />
+            <Bell size={24} />
             {newAlertsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+              <span className="absolute top-0 right-0 w-5 h-5 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
             )}
           </button>
           
           <button 
             onClick={logout}
-            className="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700 hover:bg-red-500/20 hover:text-red-400 transition-all shadow-lg"
-            title="Logout"
+            className="w-14 h-14 rounded-full bg-rose-500/10 text-rose-200 flex items-center justify-center border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all shadow-2xl"
           >
-            <LogOut size={20} />
+            <LogOut size={24} />
           </button>
         </div>
       </header>
 
-      {/* Chapter99 Solution (by Nong Mira) Action Prompt (Toast Notification) */}
       <AnimatePresence>
-        {miraMessage && (
+        {somMessage && (
           <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="fixed top-4 left-4 right-4 md:left-auto md:right-8 md:w-[400px] z-[200] bg-primary/90 backdrop-blur-md border border-white/20 p-4 md:p-6 rounded-2xl md:rounded-[2rem] flex items-center gap-4 shadow-2xl"
+            className="fixed top-4 left-4 right-4 md:left-auto md:right-8 md:w-[400px] z-[200] bg-orange-500/90 backdrop-blur-md border border-white/20 p-4 md:p-6 rounded-2xl md:rounded-[2rem] flex items-center gap-4 shadow-2xl"
           >
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center text-primary shadow-lg flex-shrink-0">
-              <Heart size={20} className="md:size-24" fill="currentColor" />
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center text-orange-500 shadow-lg flex-shrink-0">
+              <Sparkles size={20} className="md:size-24" fill="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-xs md:text-sm leading-tight font-sans break-words">{miraMessage}</p>
-              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Chapter99 Solution (by Nong Mira)</p>
+              <p className="text-white font-bold text-xs md:text-sm leading-tight font-sans break-words">{somMessage}</p>
+              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Nong Som (น้องส้ม) 🍊</p>
             </div>
             <button 
-              onClick={() => setMiraMessage(null)}
+              onClick={() => setSomMessage(null)}
               className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-colors"
             >
               <X size={18} />
@@ -483,6 +529,193 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
 
       {/* Main Content Area */}
       <div className="flex-1 p-6 md:p-10 overflow-y-auto space-y-10 bg-[#0A0E17]">
+        {activeTab === 'calendar' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-serif font-black text-white">{t('ตารางการทำงานรายคน', 'Staff Weekly Schedule')}</h3>
+                <p className="text-slate-500 text-sm mt-1">{t('ตารางจัดสรรพนักงานแบบรายคอลัมน์ (Melbooking Inspired)', 'Multi-column Therapist Board')}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+              {staff.map(s => (
+                <div key={s.therapistId} className="flex flex-col gap-4 bg-slate-900/50 rounded-[3rem] p-6 border border-slate-800 h-[600px] overflow-hidden relative">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20 text-lg font-black">
+                      {s.therapistName.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-white font-bold">{s.therapistName}</div>
+                      <div className={cn(
+                        "text-[8px] uppercase font-black tracking-widest",
+                        s.status === 'Available' ? "text-emerald-400" : s.status === 'Working' ? "text-orange-400" : "text-slate-400"
+                      )}>
+                        {s.status}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-3 py-4 overflow-y-auto scrollbar-hide">
+                    {/* Active Session */}
+                    {s.status === 'Working' && (
+                      <motion.div 
+                        layoutId={`session-${s.therapistId}`}
+                        className="bg-orange-500 p-4 rounded-3xl text-white shadow-xl shadow-orange-900/20"
+                      >
+                         <div className="flex justify-between items-start mb-2">
+                           <div className="text-[8px] font-black uppercase tracking-widest opacity-60">Working Now</div>
+                           <Clock size={12} />
+                         </div>
+                         <div className="font-bold text-sm mb-1">{s.currentCustomer}</div>
+                         <div className="text-[10px] opacity-80 leading-tight">{s.currentService}</div>
+                         <div className="mt-4 flex items-center gap-2">
+                           <div className="text-xl font-black">{Math.floor((s.remainingSeconds || 0) / 60)}:{(s.remainingSeconds || 0) % 60 < 10 ? '0' : ''}{(s.remainingSeconds || 0) % 60}</div>
+                           <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden flex-1">
+                             <motion.div 
+                               initial={{ width: '0%' }}
+                               animate={{ width: `${((s.remainingSeconds || 0) / (3600)) * 100}%` }}
+                               className="h-full bg-white"
+                             />
+                           </div>
+                         </div>
+                      </motion.div>
+                    )}
+
+                    {/* Pending Payment */}
+                    {s.status === 'PaymentPending' && (
+                      <div className="bg-amber-500 p-4 rounded-3xl text-white animate-pulse shadow-lg shadow-amber-900/20">
+                         <div className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-2">Service Ended</div>
+                         <div className="font-bold text-sm mb-1">{s.currentCustomer}</div>
+                         <div className="text-[10px] opacity-80">Waiting for Payment</div>
+                      </div>
+                    )}
+
+                    {/* Empty Slots */}
+                    {s.status === 'Available' && (
+                      <div className="h-24 rounded-3xl border-2 border-dashed border-gold/10 flex flex-col items-center justify-center text-gold/20 hover:border-gold/40 hover:text-gold/40 transition-all cursor-pointer group bg-gold/5">
+                        <Plus size={24} className="mb-1 group-hover:scale-125 transition-transform" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Assign Guest</span>
+                      </div>
+                    )}
+
+                    {/* Next Bookings */}
+                    <div className="border-t border-gold/5 pt-4">
+                      <div className="text-[8px] font-black uppercase tracking-widest text-gold/20 mb-3 ml-1 tracking-[0.2em]">Up Next</div>
+                      <div className="bg-gold/5 border border-gold/10 p-3 rounded-2xl mb-2 opacity-30">
+                        <div className="text-[8px] font-black uppercase tracking-widest text-gold/40 mb-1">Coming Soon</div>
+                        <div className="text-xs font-bold text-gold/30 italic">No reserved guests</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'crm' && (
+          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-4xl font-serif font-black text-gold italic tracking-tight">{t('ฐานข้อมูลลูกค้า (CRM)', 'VIP Customer Registry')}</h3>
+                <p className="text-gold/50 text-sm mt-2 font-medium tracking-wide uppercase tracking-[0.2em]">{t('ประวัติและสถานะลูกค้าแบบเจาะลึก', 'Intelligent Business Insights & CRM')}</p>
+              </div>
+              <button className="px-8 py-4 bg-gold text-navy rounded-full font-black flex items-center gap-2 hover:scale-105 transition-all shadow-2xl shadow-gold/20">
+                <UserPlus size={20} /> {t('เพิ่มข้อมูลลูกค้า', 'Register Guest')}
+              </button>
+            </div>
+
+            <div className="bg-white/5 rounded-[4rem] border border-gold/10 p-10 overflow-hidden shadow-2xl backdrop-blur-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gold/5 text-left">
+                      <th className="pb-8 text-[10px] font-black uppercase tracking-[0.3em] text-gold/30">{t('ชื่อลูกค้า', 'Guest Name')}</th>
+                      <th className="pb-8 text-[10px] font-black uppercase tracking-[0.3em] text-gold/30">{t('จำนวนครั้งที่มา', 'Loyalty Count')}</th>
+                      <th className="pb-8 text-[10px] font-black uppercase tracking-[0.3em] text-gold/30">{t('ครั้งล่าสุด', 'Last Visit')}</th>
+                      <th className="pb-8 text-[10px] font-black uppercase tracking-[0.3em] text-gold/30">{t('สถานะลูกค้า', 'Status Profiling')}</th>
+                      <th className="pb-8 text-[10px] font-black uppercase tracking-[0.3em] text-gold/30 text-right">{t('ดำเนินการ', 'Actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map(customer => {
+                      const isVIP = customer.visits >= 10;
+                      const isNew = customer.visits <= 1;
+                      const lastVisitDate = new Date(customer.lastVisit);
+                      const diffDays = Math.ceil((new Date().getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
+                      const isInactive = diffDays > 60;
+                      const todayStr = new Date().toISOString().slice(5, 10);
+                      const isBirthday = customer.birthday.slice(5, 10) === todayStr;
+
+                      return (
+                        <tr key={customer.id} className="border-b border-gold/5 group hover:bg-gold/5 transition-all">
+                          <td className="py-8">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 rounded-2xl bg-gold/5 flex items-center justify-center text-gold font-serif font-black text-xl border border-gold/10 group-hover:border-gold/30 transition-all">
+                                {customer.name.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="font-bold text-white text-lg">{customer.name}</div>
+                                <div className="text-[10px] text-gold/40 font-black uppercase tracking-widest">{customer.id}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-8">
+                            <div className="text-3xl font-serif font-black text-gold">{customer.visits}</div>
+                            <div className="text-[8px] text-gold/30 font-black uppercase tracking-widest">times</div>
+                          </td>
+                          <td className="py-8">
+                            <div className="text-gold/60 text-sm font-medium">{customer.lastVisit}</div>
+                            <div className="text-[8px] text-gold/30 font-black uppercase tracking-widest">{diffDays} days ago</div>
+                          </td>
+                          <td className="py-8">
+                            <div className="flex flex-wrap gap-3">
+                              {isVIP && (
+                                <span className="px-4 py-1.5 bg-gold/10 text-gold rounded-full text-[9px] font-black uppercase tracking-widest border border-gold/20 flex items-center gap-2 shadow-lg">
+                                  <Star size={10} fill="currentColor" /> VIP Elite
+                                </span>
+                              )}
+                              {isNew && (
+                                <span className="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-500/20">New Discovery</span>
+                              )}
+                              {isInactive && (
+                                <span className="px-4 py-1.5 bg-sky-500/10 text-sky-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-sky-500/20 flex items-center gap-2">
+                                  <Clock size={10} /> Inactive
+                                </span>
+                              )}
+                              {isBirthday && (
+                                <span className="px-4 py-1.5 bg-rose-500/10 text-rose-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-rose-500/20 flex items-center gap-2 shadow-lg animate-bounce">
+                                  <Heart size={10} fill="currentColor" /> Special Day
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-8 text-right">
+                             <div className="flex justify-end gap-3 opacity-20 group-hover:opacity-100 transition-all">
+                               {isInactive && (
+                                 <button 
+                                   onClick={() => setSomMessage(`พี่คะ! ส่งโปรโมชั่น 'Relax & Recharge' ให้พี่ ${customer.name} ดีมั้ยคะ? ลด 15% รับรองแขกกลับมาคึกคักแน่นอนค่ะ 🍊`)}
+                                   className="px-4 py-2 bg-orange-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-400 shadow-xl"
+                                 >
+                                   เสนอโปร Relax & Recharge 🍊
+                                 </button>
+                               )}
+                               <button className="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center hover:bg-gold hover:text-navy border border-gold/20 transition-all">
+                                 <ChevronRight size={20} />
+                               </button>
+                             </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'control' ? (
           <>
             {/* Bed Status Section */}
@@ -711,22 +944,35 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                         animate={{ opacity: 1, scale: 1 }}
                         className={cn(
                           "flex-shrink-0 flex flex-col items-center gap-3 px-8 py-6 rounded-[2rem] border-2 transition-all min-w-[160px]",
-                          s.status === 'Available' 
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
-                            : "bg-slate-800/50 border-slate-700 text-slate-500"
+                          s.status === 'Available' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10" :
+                          s.status === 'Working' ? "bg-orange-500/10 border-orange-500/20 text-orange-400 shadow-lg shadow-orange-500/10" :
+                          s.status === 'PaymentPending' ? "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse border-dashed" :
+                          "bg-red-500/10 border-red-500/20 text-red-400"
                         )}
                       >
-                        <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 text-lg font-black">
+                        <div className={cn(
+                          "w-12 h-12 rounded-full flex items-center justify-center border text-lg font-black",
+                          s.status === 'Available' ? "bg-emerald-500 text-white border-emerald-400" :
+                          s.status === 'Working' ? "bg-orange-500 text-white border-orange-400" :
+                          s.status === 'PaymentPending' ? "bg-amber-500 text-white border-amber-400" :
+                          "bg-red-500 text-white border-red-400"
+                        )}>
                           {index + 1}
                         </div>
                         <span className="font-bold text-lg">{s.therapistName}</span>
                         <div className="flex items-center gap-2">
                           <div className={cn(
                             "w-2 h-2 rounded-full",
-                            s.status === 'Available' ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                            s.status === 'Available' ? "bg-emerald-500 animate-pulse" :
+                            s.status === 'Working' ? "bg-orange-500 animate-spin-slow" :
+                            s.status === 'PaymentPending' ? "bg-amber-500 animate-ping" :
+                            "bg-red-500"
                           )} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-                            {s.status === 'Available' ? t('ว่าง', 'Available') : t('ติดแขก', 'Busy')}
+                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">
+                            {s.status === 'Available' ? t('ว่าง', 'Available') : 
+                             s.status === 'Working' ? t('ทำงาน', 'Working') :
+                             s.status === 'PaymentPending' ? t('รอจ่าย', 'Unpaid') :
+                             t('พักเบรก', 'Break')}
                           </span>
                         </div>
                       </motion.div>
@@ -746,7 +992,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Total Sales</p>
-                  <p className="text-3xl font-black text-white">${salesLog.reduce((acc, s) => acc + s.amount, 0).toFixed(2)}</p>
+                  <p className="text-3xl font-black text-white">{formatCurrency(salesLog.reduce((acc, s) => acc + s.amount, 0))}</p>
                 </div>
                 <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Transactions</p>
@@ -755,7 +1001,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                 <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Average Bill</p>
                   <p className="text-3xl font-black text-white">
-                    ${salesLog.length > 0 ? (salesLog.reduce((acc, s) => acc + s.amount, 0) / salesLog.length).toFixed(2) : '0.00'}
+                    {formatCurrency(salesLog.length > 0 ? (salesLog.reduce((acc, s) => acc + s.amount, 0) / salesLog.length) : 0)}
                   </p>
                 </div>
               </div>
@@ -773,7 +1019,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                         <p className="text-[10px] text-slate-500">{sale.service} • {sale.method}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-primary">${sale.amount.toFixed(2)}</p>
+                        <p className="text-sm font-black text-primary">{formatCurrency(sale.amount)}</p>
                         <p className="text-[8px] text-slate-500">{new Date(sale.timestamp).toLocaleTimeString()}</p>
                       </div>
                     </div>
@@ -794,23 +1040,23 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
 
       {/* Floating Action Buttons (FABs) Stack - Moved outside scrollable area and adjusted for mobile nav */}
       <div className="fixed bottom-28 right-6 md:bottom-10 md:right-10 z-50 flex flex-col items-center gap-3 md:gap-4 no-print">
-        {/* Chapter99 Solution (by Nong Mira) (M) Button */}
+        {/* Nong Som AI Button */}
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => window.dispatchEvent(new CustomEvent('open-nong-mira'))}
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-primary shadow-xl flex items-center justify-center border-2 border-primary/20 hover:bg-primary/5 transition-colors group scale-85 md:scale-100"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-nong-som'))}
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-orange-500 shadow-xl flex items-center justify-center border-2 border-orange-500/20 hover:bg-orange-50/50 transition-colors group scale-85 md:scale-100"
         >
           <div className="relative">
-            <Heart size={18} className="md:size-6" fill="currentColor" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-primary text-white rounded-full flex items-center justify-center border border-white">
-              <span className="text-[8px] md:text-[10px] font-black">M</span>
+            <Sparkles size={18} className="md:size-6" fill="currentColor" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-orange-500 text-white rounded-full flex items-center justify-center border border-white">
+              <span className="text-[8px] md:text-[10px] font-black">🍊</span>
             </div>
           </div>
           
-          {/* Tooltip/Message for Chapter99 Solution (by Nong Mira) */}
-          <div className="absolute right-full mr-4 bg-white text-primary p-3 rounded-2xl rounded-br-none shadow-xl border border-primary/10 text-[10px] font-bold w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
-            {t('พี่แสนคะ หนูทำระบบ "จดเวลาเป๊ะๆ" ให้แล้วนะ พอพี่กดรับเงิน PayID ปุ๊บ หนูจะแอบจดวินาทีที่เงินเข้าไว้ให้ป้าทันที พี่ไม่ต้องเสียเวลาถ่ายรูปสลิปให้วุ่นวายค่ะ ป้าไปเช็คในแอปแบงค์ตอนไหนก็เจอ เพราะเวลาหนูแก้ไม่ได้ค่ะ!', "Master Admin, I've added the 'Exact Time' system. When you confirm a PayID payment, I'll record the exact second for the owner. No need to take slip photos anymore; the owner can just check their bank app against my recorded time!")}
+          {/* Tooltip/Message for Nong Som */}
+          <div className="absolute right-full mr-4 bg-white text-orange-600 p-3 rounded-2xl rounded-br-none shadow-xl border border-orange-500/10 text-[10px] font-bold w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
+            {t('พี่ๆ คะ น้องส้มทำระบบ "จดเวลาเป๊ะๆ" ให้แล้วนะ พอพี่กดรับเงิน PayID ปุ๊บ น้องส้มจะแอบจดวินาทีที่เงินเข้าไว้ให้พี่เจ้าของร้านทันทีเลยค่ะ พี่ไม่ต้องเสียเวลาถ่ายรูปสลิปให้วุ่นวายแล้วนะคะ! 🍊', "Master Admin, I've added the 'Exact Time' system. When you confirm a PayID payment, I'll record the exact second for the owner. No need to take slip photos anymore! 🍊")}
           </div>
         </motion.button>
 
@@ -851,7 +1097,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                       {t('จัดการสถานะและพักเบรก / Staff Status', 'Staff Status & Breaks')}
                     </h3>
                     <p className="text-slate-500 text-sm">
-                      {t('พี่แสนคะ หนูซ่อนตารางพักเบรกไว้ในปุ่มเล็กๆ ให้แล้วนะคะ หน้าจอหลักจะได้มีพื้นที่ดูเตียงลูกค้าแบบเต็มตา พอจะให้ใครไปกินข้าว ค่อยกดปุ่มเปิดขึ้นมาดูค่ะ!', 'Master Admin, I\'ve hidden the break table in this button to save space. Open it when you need to manage staff breaks!')}
+                      {t('พี่ๆ คะ น้องส้มซ่อนตารางพักเบรกไว้ในปุ่มเล็กๆ ให้แล้วนะคะ หน้าจอหลักจะได้มีพื้นที่ดูเตียงลูกค้าแบบเต็มตา พอจะให้ใครไปกินข้าว ค่อยกดปุ่มเปิดขึ้นมาดูนะคะ! 🍊', 'I\'ve hidden the break table in this button to save space. Open it when you need to manage staff breaks! 🍊')}
                     </p>
                   </div>
                   <button onClick={() => setIsStaffStatusOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
@@ -1016,7 +1262,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                           )}
                         >
                           <span className="font-bold">{s.name}</span>
-                          <span className="text-xs opacity-60">${s.standardPrice}</span>
+                          <span className="text-xs opacity-60">{formatCurrency(s.standardPrice)}</span>
                         </button>
                       ))}
                     </div>
@@ -1025,10 +1271,10 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   <div className="space-y-4">
                     <div className="flex justify-between items-end">
                       <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">{t('เลือกพนักงาน / Therapist', 'Therapist')}</label>
-                      <div className="flex items-center gap-2 text-primary animate-pulse">
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white font-bold text-[10px]">M</div>
+                      <div className="flex items-center gap-2 text-orange-500 animate-pulse">
+                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px]">🍊</div>
                         <span className="text-[9px] font-bold italic">
-                          {t('พี่แสนคะ... แนะนำคนว่างคิวแรกได้เลยค่ะ!', 'Tip: Recommend the first available staff!')}
+                          {t('พี่ๆ คะ... น้องส้มแนะนำคนว่างคิวแรกให้แล้วนะคะ! 🍊', 'Tip: Nong Som recommends the first available staff! 🍊')}
                         </span>
                       </div>
                     </div>
@@ -1167,11 +1413,11 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   </div>
                 </div>
 
-                {/* Chapter99 Solution (by Nong Mira) Guidance */}
-                <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">M</div>
-                  <p className="text-xs text-primary leading-relaxed">
-                    {t('พี่จิ้มเลือกวิธีจ่ายเงินที่ลูกค้าใช้ได้เลยค่ะ ถ้าเป็น PayID หนูเตือนให้ถ่ายรูปสลิปไว้ด้วย ป้าจะได้เช็คยอดง่ายค่ะ!', 'Please select the payment method. For PayID, don\'t forget to take a photo of the slip for easier tracking!')}
+                {/* Nong Som Guidance */}
+                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">🍊</div>
+                  <p className="text-xs text-orange-600 leading-relaxed font-bold">
+                    {t('พี่จิ้มเลือกวิธีจ่ายเงินที่ลูกค้าใช้ได้เลยนะคะ ถ้าเป็น PayID น้องส้มจามเวลาเข้าให้พี่เจ้าของร้านเป๊ะๆ เลยค่ะ พี่ไม่ต้องห่วงนะคะ! 🍊', 'Please select the payment method. For PayID, I will record the exact time for the owner! 🍊')}
                   </p>
                 </div>
 
@@ -1194,7 +1440,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('ยอดรวม / Total', 'Total')}</p>
-                      <p className="text-5xl font-black text-primary font-sans">${paymentSession.currentPrice}</p>
+                      <p className="text-5xl font-black text-primary font-sans">{formatCurrency(paymentSession.currentPrice || 0)}</p>
                     </div>
                   </div>
                 </div>
@@ -1252,7 +1498,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     >
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Insurance Claim ($)</label>
+                          <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Insurance Claim (AUD)</label>
                           <input 
                             type="number"
                             value={hicapsData.claim || ''}
@@ -1262,7 +1508,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Gap Payment ($)</label>
+                          <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Gap Payment (AUD)</label>
                           <input 
                             type="number"
                             value={hicapsData.gap || ''}
@@ -1413,7 +1659,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                         <button 
                           onClick={() => {
                             setAlerts(prev => prev.map(a => a.id === alert.id ? { ...a, status: 'RESOLVED' } : a));
-                            setMiraMessage(t('รับทราบปัญหาแล้วค่ะ หนูจะแจ้งให้พี่ๆ หมอทราบนะคะ', "Issue acknowledged! I'll let the staff know."));
+                            setSomMessage(t('น้องส้มรับทราบปัญหาแล้วค่ะ เดี๋ยวจะรีบบอกพี่เจ้าของร้านให้นะคะ 🍊', "Nong Som acknowledged the issue! I'll let the owner know. 🍊"));
                           }}
                           className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
                         >
@@ -1508,11 +1754,30 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                 </div>
                 <h2 className="text-2xl font-serif font-bold tracking-tight">{t('ชำระเงินสำเร็จ!', 'Payment Successful!')}</h2>
                 
-                {/* Chapter99 Solution (by Nong Mira) Help */}
-                <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-start gap-3 text-left">
-                  <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">M</div>
-                  <p className="text-xs text-primary leading-relaxed">
-                    {t('พี่ๆ คะ กดปุ่มพิมพ์ใบเสร็จตรงนี้ได้เลยนะคะ หนูจัดหน้ากระดาษให้พอดีกับเครื่องปริ้นท์สลิปแล้ว ฝรั่งเอาไปเคลมประกันได้เป๊ะๆ ไม่มีพลาดแน่นอนค่ะ!', 'You can print the receipt here. I\'ve formatted it perfectly for thermal printers so customers can claim insurance easily!')}
+                {/* Post-Care Advice */}
+                {paymentSession.currentServiceId && services.find(s => s.id === paymentSession.currentServiceId)?.postCareTips && (
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-left space-y-3">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-emerald-800 border-b border-emerald-100 pb-2 flex items-center gap-2">
+                       <Heart size={14} fill="currentColor" /> {t('คำแนะนำหลังการบริการ', 'Post-Care Advice')}
+                    </h4>
+                    <div className="space-y-2">
+                      {services.find(s => s.id === paymentSession.currentServiceId)?.postCareTips?.map((tip, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <span className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">{idx + 1}</span>
+                          <p className="text-[11px] font-medium text-emerald-900 leading-tight">
+                            {t(tip.th, tip.en)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Nong Som Help */}
+                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3 text-left">
+                  <div className="w-8 h-8 rounded-full bg-orange-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">🍊</div>
+                  <p className="text-xs text-orange-600 font-bold leading-relaxed">
+                    {t('พี่ๆ คะ กดปุ่มพิมพ์ใบเสร็จตรงนี้ได้เลยนะคะ น้องส้มจัดหน้ากระดาษไว้ให้พี่แล้วค่ะ ฝรั่งเอาไปเคลมประกันได้ง่ายๆ เลยนะคะ! 🍊', 'You can print the receipt here. I\'ve formatted it perfectly for thermal printers so customers can claim insurance easily! 🍊')}
                   </p>
                 </div>
 
@@ -1547,14 +1812,14 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   <div className="border-t border-slate-200 pt-2 mt-2">
                     <div className="flex justify-between font-bold">
                       <span>{paymentSession.currentService}</span>
-                      <span>${paymentSession.currentPrice?.toFixed(2)}</span>
+                      <span>{formatCurrency(paymentSession.currentPrice || 0)}</span>
                     </div>
                   </div>
 
                   <div className="border-t border-slate-200 pt-2 mt-2 space-y-1">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>${((paymentSession.currentPrice || 0) / 1.1).toFixed(2)}</span>
+                      <span>{formatCurrency((paymentSession.currentPrice || 0) / 1.1)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>GST (10%):</span>
@@ -1562,7 +1827,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     </div>
                     <div className="flex justify-between text-sm font-black pt-1 border-t border-slate-200">
                       <span>TOTAL:</span>
-                      <span>${paymentSession.currentPrice?.toFixed(2)}</span>
+                      <span>{formatCurrency(paymentSession.currentPrice || 0)}</span>
                     </div>
                   </div>
 
@@ -1570,11 +1835,11 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     <div className="bg-slate-200/50 p-2 rounded mt-2 space-y-1">
                       <div className="flex justify-between">
                         <span>Insurance Claim:</span>
-                        <span>-${hicapsData.claim.toFixed(2)}</span>
+                        <span>-{formatCurrency(hicapsData.claim)}</span>
                       </div>
                       <div className="flex justify-between font-bold">
                         <span>Gap Payment:</span>
-                        <span>${hicapsData.gap.toFixed(2)}</span>
+                        <span>{formatCurrency(hicapsData.gap)}</span>
                       </div>
                     </div>
                   )}
@@ -1582,6 +1847,59 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   <div className="text-center pt-4 border-t border-slate-200 mt-4">
                     <p>Payment Method: {paymentMethod}</p>
                     <p className="mt-2 italic">Thank you for visiting us!</p>
+                  </div>
+                </div>
+
+                {/* Wellness Reward Card */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-navy p-6 rounded-[2rem] text-left border border-gold/20 shadow-xl space-y-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold border border-gold/20">
+                      <Heart size={20} fill="currentColor" />
+                    </div>
+                    <div>
+                      <h4 className="text-gold font-serif font-black text-sm italic">{t('รางวัลพิเศษสำหรับคุณ!', 'Wellness Loyalty Reward')}</h4>
+                      <p className="text-[8px] text-gold/40 uppercase font-black tracking-widest leading-none mt-1">Exclusive for our guests</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-gold/80 font-medium leading-relaxed">
+                    {t(
+                      'สบายตัวแล้ว อย่าลืมดูแลตัวเองต่อเนื่องนะคะ! จองล่วงหน้าสำหรับครั้งถัดไป รับส่วนลดพิเศษ 10% ทันที!',
+                      'Feeling relaxed? Keep the wellness going! Book your next session in advance and get 10% off instantly.'
+                    )}
+                  </p>
+
+                  <button className="w-full py-3 bg-gold text-navy rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg hover:bg-white hover:text-navy transition-all flex items-center justify-center gap-2">
+                    <Sparkles size={14} /> {t('จองล่วงหน้าเลย 🍊', 'Book Next Session')}
+                  </button>
+                </motion.div>
+
+                {/* Digital Receipt QR */}
+                <div className="bg-navy p-6 rounded-[2.5rem] text-white space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                      <QrCode size={20} />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs font-black uppercase tracking-widest">{t('ใบเสร็จดิจิทัล', 'Digital Receipt')}</div>
+                      <div className="text-[10px] text-white/50">{t('สแกนเพื่อโหลด Health Fund Claim', 'Scan for Health Fund Claim')}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-2xl inline-block shadow-lg">
+                    <QRCodeSVG 
+                      value={`https://receipts.ais-v5.app/${paymentSession.therapistId}/${Date.now()}`} 
+                      size={120} 
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 justify-center pt-2">
+                    <ShieldCheck size={14} className="text-emerald-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Certified Health Fund Provider</span>
                   </div>
                 </div>
 
@@ -1700,7 +2018,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
         <div className="mb-4">
           <div className="flex justify-between items-end mb-1">
             <span className="font-black text-sm uppercase flex-1 mr-4">{paymentSession?.currentService}</span>
-            <span className="font-black text-base">${paymentSession?.currentPrice?.toFixed(2)}</span>
+            <span className="font-black text-base">{formatCurrency(paymentSession?.currentPrice || 0)}</span>
           </div>
           <div className="flex justify-between text-[9px] italic opacity-70">
             <span>Service Duration</span>
@@ -1711,15 +2029,15 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
         <div className="border-t-2 border-black pt-3 mt-4 space-y-1 bg-slate-50/50 p-2">
           <div className="flex justify-between text-[10px]">
             <span>Subtotal (Excl. GST):</span>
-            <span>${((paymentSession?.currentPrice || 0) / 1.1).toFixed(2)}</span>
+            <span>{formatCurrency((paymentSession?.currentPrice || 0) / 1.1)}</span>
           </div>
           <div className="flex justify-between text-[10px]">
             <span>GST (10%):</span>
-            <span>${((paymentSession?.currentPrice || 0) / 11).toFixed(2)}</span>
+            <span>{formatCurrency((paymentSession?.currentPrice || 0) / 11)}</span>
           </div>
           <div className="flex justify-between font-black pt-2 border-t-4 border-black text-xl mt-2">
             <span>TOTAL AUD:</span>
-            <span>${paymentSession?.currentPrice?.toFixed(2)}</span>
+            <span>{formatCurrency(paymentSession?.currentPrice || 0)}</span>
           </div>
         </div>
  
@@ -1733,11 +2051,11 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
             <p className="text-center font-black text-[10px] uppercase tracking-widest border-b border-black pb-1 mb-2">HICAPS Summary</p>
             <div className="flex justify-between text-[10px]">
               <span>Insurance Benefit:</span>
-              <span className="font-bold">-${hicapsData.claim.toFixed(2)}</span>
+              <span className="font-bold">-{formatCurrency(hicapsData.claim)}</span>
             </div>
             <div className="flex justify-between font-black text-sm border-t border-black pt-1">
               <span>Gap to Pay:</span>
-              <span>${hicapsData.gap.toFixed(2)}</span>
+              <span>{formatCurrency(hicapsData.gap)}</span>
             </div>
           </div>
         )}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Star, Clock, ChevronRight, Plus, Image as ImageIcon, Sparkles, Phone, Calendar as CalendarIcon, ExternalLink, X, MapPin, Map } from 'lucide-react';
+import { Search, Star, Clock, ChevronRight, Plus, Image as ImageIcon, Sparkles, Phone, Calendar as CalendarIcon, ExternalLink, X, MapPin, Map, ShieldCheck, QrCode } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { services } from '../data/services';
 import { therapists } from '../data/therapists';
 import { storeConfig, getAppSettings } from '../config';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import { useCart } from '../contexts/CartContext';
 import ServiceImage from './ServiceImage';
 import { getCurrentPrice } from '../lib/pricing';
@@ -14,6 +14,7 @@ import { Service, Therapist } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { fetchWithRetry } from '../lib/apiUtils';
 import LoadingOverlay from './LoadingOverlay';
+import VoucherStore from './VoucherStore';
 
 export default function Home() {
   const { t } = useLanguage();
@@ -56,7 +57,15 @@ export default function Home() {
     loadServices();
   }, []);
 
-  const categories = ['All', 'MASSAGE', 'FACIAL', 'SPA PACKAGES'];
+  const categoryLabels: Record<string, { th: string; en: string }> = {
+    'All': { th: 'ทั้งหมด', en: 'All' },
+    'MASSAGE': { th: 'นวดผ่อนคลาย', en: 'Massage' },
+    'FACIAL': { th: 'ดูแลผิวหน้า', en: 'Facial' },
+    'SPA PACKAGES': { th: 'แพ็กเกจสปา', en: 'Spa Packages' },
+    'GIFTS': { th: 'บัตรของขวัญ', en: 'Gift Vouchers' }
+  };
+
+  const categories = Object.keys(categoryLabels);
   
   const featuredServices = services.filter(s => s.isFeatured).filter(s => {
     if (genderPreference === 'All') return true;
@@ -117,67 +126,144 @@ export default function Home() {
         defaultGenderFilter={genderPreference}
       />
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex flex-col items-center justify-center text-center overflow-hidden">
+      <section className="relative h-[95vh] flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Full-width Hero Image or Video */}
         <div className="absolute inset-0 z-0">
-          {isLoaded && heroVideoUrl ? (
-            <video 
-              autoPlay 
-              muted 
-              loop 
-              playsInline 
-              poster={heroImageUrl}
-              className="w-full h-full object-cover"
-            >
-              <source src={heroVideoUrl} type="video/mp4" />
-            </video>
-          ) : (
-            <motion.img 
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
-              src={heroImageUrl} 
-              alt="Hero" 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          )}
-          <div className="absolute inset-0 bg-navy/50" />
+          <motion.img 
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 15, ease: "linear" }}
+            src="https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=2070&auto=format&fit=crop" 
+            alt="Hero" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 ocean-overlay" />
+          
+          {/* Subtle Ocean Glows */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-ocean/10 blur-[120px] rounded-full" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-turquoise/10 blur-[120px] rounded-full" />
         </div>
 
-        <div className="relative z-10 px-6 max-w-3xl">
-          <motion.h2 
-            initial={{ opacity: 0, y: 30 }}
+        <div className="relative z-10 px-6 max-w-5xl space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white mb-8 tracking-tight leading-tight"
+            className="space-y-4"
           >
-            {shopDescription}
-          </motion.h2>
+            <h2 className="text-4xl md:text-6xl lg:text-7xl font-serif font-black text-white mb-2 tracking-tight leading-[1.1] italic drop-shadow-2xl">
+              Premium Thai Massage <br /> & Wellness in Altona
+            </h2>
+            <p className="text-white/90 font-serif text-xl md:text-2xl mt-4 font-medium drop-shadow-lg">
+              Experience the art of healing with our expert therapists.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-[2.5rem] max-w-2xl mx-auto space-y-4 shadow-2xl"
+          >
+            <p className="text-white font-serif italic text-lg leading-relaxed">"{t('ผ่อนคลาย สบายครบเครื่องที่เดียว', 'Pure Relaxation – Your Sanctuary in Altona')}"</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <span className="px-5 py-2 bg-gold text-navy rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
+                "{t('ศาสตร์นวดไทยพรีเมียม', 'Premium Thai Healing')}"
+              </span>
+              <span className="px-5 py-2 bg-white/20 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/30 backdrop-blur-sm">
+                "{t('ฟื้นฟูร่างกายด้วยมืออาชีพ', 'Expert Muscle Recovery')}"
+              </span>
+            </div>
+          </motion.div>
           
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            transition={{ delay: 0.8 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-6"
           >
             <Link 
               to="/book"
-              onClick={() => setShowIntakeNote(true)}
-              className="bg-accent text-navy px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-2xl hover:scale-105 transition-all active:scale-95"
+              className="w-full sm:w-auto bg-gold text-navy px-12 py-5 rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(212,175,55,0.4)] hover:scale-105 hover:bg-white transition-all active:scale-95"
             >
-              <span>📱</span> {t('Online Booking', 'Online Booking')}
+              Online Booking
             </Link>
             <a 
               href={`tel:${storeConfig.phone}`}
-              className="bg-transparent text-white px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest border border-white flex items-center gap-2 hover:bg-white hover:text-black transition-all active:scale-95"
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-xl text-white px-12 py-5 rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] border-2 border-white/40 hover:bg-white hover:text-navy transition-all active:scale-95 shadow-2xl"
             >
-              <span>📞</span> {t('Call Now', 'Call Now')}
+              Call Now
             </a>
           </motion.div>
         </div>
       </section>
 
-      {/* Featured Experiences */}
+      {/* Featured Experiences Highlight Grid */}
+      <section className="max-w-7xl mx-auto px-6 -mt-32 relative z-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            {
+              id: '1',
+              title: 'Traditional Thai Yoga Massage',
+              price: 95,
+              image: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=600&fit=crop',
+              category: 'Healing'
+            },
+            {
+              id: '2',
+              title: 'Premium Aromatherapy Oil Massage',
+              price: 115,
+              image: 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?q=80&w=600&fit=crop',
+              category: 'Luxury'
+            },
+            {
+              id: '4',
+              title: 'Ultimate Zen Spa Package',
+              price: 150,
+              image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=600&fit=crop',
+              category: 'Ocean Zen'
+            }
+          ].map((exp, idx) => (
+            <motion.div
+              key={exp.id}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.2 }}
+              viewport={{ once: true }}
+              className="group relative h-[32rem] rounded-[4rem] overflow-hidden border border-white/20 shadow-2xl bg-white"
+            >
+              <img src={exp.image} alt={exp.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ocean/80 via-ocean/20 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
+              
+              <div className="absolute bottom-12 left-10 right-10 space-y-5">
+                <span className="inline-block px-4 py-1.5 bg-gold text-navy text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
+                  {exp.category}
+                </span>
+                <h4 className="text-3xl font-serif font-black text-white leading-tight italic drop-shadow-lg">{exp.title}</h4>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-3 text-gold">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30">
+                      <Sparkles size={20} className="text-white" />
+                    </div>
+                    <span className="text-2xl font-black text-white drop-shadow-md">{formatCurrency(exp.price)}</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const service = services.find(s => s.id === exp.id);
+                      if (service) handleAddClick(service);
+                    }}
+                    className="w-14 h-14 rounded-full bg-white text-ocean shadow-2xl flex items-center justify-center hover:bg-gold hover:text-navy transition-all hover:scale-110"
+                  >
+                    <Plus size={28} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured Experiences (Original Section - filtered to only show others or we can hide it for now to avoid redundancy) */}
       {storeConfig.packageTier >= 2 && featuredServices.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 space-y-8">
           <div className="flex items-center justify-between">
@@ -221,7 +307,7 @@ export default function Home() {
                   
                   <div className="space-y-2 text-navy/60 text-sm leading-relaxed">
                     <div className="flex justify-between items-center bg-gold/20 p-3 rounded-xl border border-primary/5">
-                      <p className="font-medium text-navy">${price} - Standard Rate</p>
+                      <p className="font-medium text-navy">{formatCurrency(price)} - Standard Rate</p>
                       <button 
                         onClick={() => handleAddClick(service)}
                         className="px-4 py-2 bg-gold text-primary rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gold/90 transition-all"
@@ -230,7 +316,7 @@ export default function Home() {
                       </button>
                     </div>
                     <div className="flex justify-between items-center bg-gold/20 p-3 rounded-xl border border-primary/5">
-                      <p className="font-medium text-navy">${Math.round(price * 1.2)} - Remedial Rate</p>
+                      <p className="font-medium text-navy">{formatCurrency(Math.round(price * 1.2))} - Remedial Rate</p>
                       <button 
                         onClick={() => handleAddClick(service)}
                         className="px-4 py-2 bg-gold text-primary rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gold/90 transition-all"
@@ -248,39 +334,39 @@ export default function Home() {
 
       {/* Search & Filter Section */}
       <section className="max-w-7xl mx-auto px-6 relative z-20">
-        <div className="bg-white p-8 rounded-[3rem] shadow-2xl border border-primary/5 space-y-8">
+        <div className="bg-white/70 p-10 rounded-[4rem] shadow-2xl border border-white/40 space-y-8 backdrop-blur-2xl">
           <div className="relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-forest/30 group-focus-within:text-accent transition-colors" size={20} />
+            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-ocean/40 group-focus-within:text-ocean transition-colors" size={24} />
             <input 
               type="search" 
-              placeholder="Find your treatment..."
+              placeholder="Find your refreshing treatment..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-cream/30 px-14 py-4 rounded-full border border-primary/5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+              className="w-full bg-white px-16 py-6 rounded-[2.5rem] border border-ocean/10 text-ocean text-lg focus:outline-none focus:ring-4 focus:ring-ocean/10 transition-all placeholder:text-ocean/20 shadow-inner"
             />
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             {/* Category Tabs */}
-            <div className="flex overflow-x-auto py-2 gap-3 no-scrollbar w-full md:w-auto">
+            <div className="flex overflow-x-auto py-2 gap-4 no-scrollbar w-full md:w-auto">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   className={cn(
-                    "flex-shrink-0 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                    "flex-shrink-0 px-8 py-3.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
                     activeCategory === cat 
-                      ? "bg-primary text-cream shadow-lg" 
-                      : "bg-cream text-navy/40 border border-navy/10 hover:bg-navy/5"
+                      ? "bg-ocean text-white shadow-xl shadow-ocean/30 scale-105" 
+                      : "bg-white text-ocean/60 border border-ocean/5 hover:border-ocean/20 hover:text-ocean shadow-sm"
                   )}
                 >
-                  {cat}
+                  {t(categoryLabels[cat].th, categoryLabels[cat].en)}
                 </button>
               ))}
             </div>
             
             {/* Gender Preference Filter */}
-            <div className="flex gap-1 p-1 bg-cream rounded-full border border-primary/5 w-full md:w-auto">
+            <div className="flex gap-1.5 p-1.5 bg-white rounded-full border border-ocean/5 w-full md:w-auto shadow-inner">
               {[
                 { value: 'All', label: 'Anyone' },
                 { value: 'Female', label: 'Female Only' },
@@ -290,10 +376,10 @@ export default function Home() {
                   key={f.value}
                   onClick={() => setGenderPreference(f.value as any)}
                   className={cn(
-                    "flex-1 md:flex-none px-6 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all",
+                    "flex-1 md:flex-none px-8 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all",
                     genderPreference === f.value 
-                      ? "bg-primary text-cream shadow-sm" 
-                      : "text-navy/40 hover:text-navy/60"
+                      ? "bg-gold text-navy shadow-md" 
+                      : "text-ocean/30 hover:text-ocean/60"
                   )}
                 >
                   {f.label}
@@ -305,114 +391,159 @@ export default function Home() {
       </section>
 
       {/* All Treatments Grid */}
-      <section className="max-w-7xl mx-auto px-6 space-y-8 pb-20">
-        <div className="space-y-1">
-          <h3 className="text-3xl font-serif font-bold text-forest">{t('ทรีทเมนท์ทั้งหมด', 'All Treatments')}</h3>
-          <p className="text-forest/40 text-sm font-medium uppercase tracking-widest">{t('เลือกบริการที่เหมาะกับคุณ', 'Choose the perfect service for you')}</p>
+      <section className="max-w-7xl mx-auto px-6 space-y-12 pb-32">
+        <div className="text-center md:text-left space-y-3">
+          <h3 className="text-4xl md:text-5xl font-serif font-black text-navy italic tracking-tight">{t('ทรีทเมนท์ทั้งหมด', 'All Vitality Treatments')}</h3>
+          <p className="text-ocean/50 text-[10px] font-black uppercase tracking-[0.5em]">{t('เลือกบริการที่เหมาะกับคุณ', 'Find Your Perfect Ocean Breeze Experience')}</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        {activeCategory === 'GIFTS' ? (
+          <VoucherStore />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
           {filteredServices.map((service) => {
             const { price } = getCurrentPrice(service);
             return (
               <motion.div 
                 key={service.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-primary/5 flex flex-col h-full group"
+                className="bg-white rounded-[3.5rem] overflow-hidden shadow-xl border border-gold/10 flex flex-col h-full group hover:shadow-2xl hover:border-gold/30 transition-all duration-500"
               >
                 {/* Image Header with Overlay */}
-                <div className="relative h-72 overflow-hidden">
-                  <ServiceImage src={service.imageUrl} alt={service.name} className="w-full h-full transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500" />
-                  <div className="absolute bottom-6 left-6 right-6 text-white">
-                    <h4 className="font-serif font-bold text-2xl leading-tight mb-1">{t(service.name, service.englishName)}</h4>
-                    <p className="text-sm font-bold opacity-90">${price} — {service.durationMins}M</p>
+                <div className="relative h-80 overflow-hidden">
+                  <ServiceImage src={service.imageUrl} alt={service.name} className="w-full h-full transition-transform duration-1000 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
+                  <div className="absolute bottom-8 left-8 right-8">
+                    <div className="flex justify-between items-end">
+                      <h4 className="font-serif font-black text-2xl leading-tight text-navy italic drop-shadow-sm">{t(service.name, service.englishName)}</h4>
+                      <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg border border-white/30 text-[10px] font-black text-navy">
+                        {service.durationMins}M
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-6 flex-1 flex flex-col">
-                  <p className="text-navy/60 text-sm font-light leading-relaxed mb-4 line-clamp-3">
+                <div className="p-10 flex-1 flex flex-col">
+                  <div className="flex items-center gap-2 mb-4 text-gold">
+                    {[1, 2, 3, 4, 5].map(i => <Star key={i} size={12} fill="currentColor" />)}
+                  </div>
+                  
+                  <p className="text-navy/60 text-sm font-medium leading-relaxed mb-8 line-clamp-2">
                     {t(service.description, service.englishDescription)}
                   </p>
 
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    <span className="text-[9px] text-navy font-bold uppercase bg-navy/5 px-2 py-1 rounded-md border border-navy/10">
-                      {service.category === 'MASSAGE' ? 'Muscle Recovery' : 'Skin Rejuvenation'}
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    <span className="text-[9px] text-ocean font-black uppercase bg-ocean/5 px-4 py-1.5 rounded-full border border-ocean/10">
+                      {service.category === 'MASSAGE' ? 'Deep Relaxation' : 'Ocean Fresh'}
                     </span>
-                    <span className="text-[9px] text-navy font-bold uppercase bg-navy/5 px-2 py-1 rounded-md border border-navy/10">
-                      {service.category === 'MASSAGE' ? 'Firm Pressure' : 'Organic Products'}
+                    <span className="text-[9px] text-ocean font-black uppercase bg-ocean/5 px-4 py-1.5 rounded-full border border-ocean/10">
+                      Certified
                     </span>
                   </div>
 
-                  {/* Pricing Grid */}
-                  <div className="grid grid-cols-2 gap-2 mb-6">
-                    <div className="bg-section p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-navy/40 uppercase">30M</span>
-                      <span className="text-sm font-bold text-navy">${Math.round(price * 0.7)}</span>
+                  <div className="mt-auto pt-6 flex items-center justify-between border-t border-ocean/5">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-black text-ocean/30 uppercase tracking-widest">Pricing</span>
+                      <span className="text-2xl font-black text-navy">{formatCurrency(price)}</span>
                     </div>
-                    <div className="bg-section p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-navy/40 uppercase">45M</span>
-                      <span className="text-sm font-bold text-navy">${Math.round(price * 0.85)}</span>
-                    </div>
-                    <div className="bg-section p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-navy/40 uppercase">60M</span>
-                      <span className="text-sm font-bold text-navy">${price}</span>
-                    </div>
-                    <div className="bg-section p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-navy/40 uppercase">90M</span>
-                      <span className="text-sm font-bold text-navy">${Math.round(price * 1.4)}</span>
-                    </div>
+                    <button 
+                      onClick={() => handleAddClick(service)}
+                      className="bg-gold text-navy h-14 px-8 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-navy hover:text-white transition-all active:scale-95 shadow-xl shadow-gold/20"
+                    >
+                      {t('จองนัดหมาย', 'Book Now')}
+                    </button>
                   </div>
-
-                  <button 
-                    onClick={() => handleAddClick(service)}
-                    className="w-full py-4 bg-gold text-primary rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold/90 transition-all active:scale-95 mt-auto"
-                  >
-                    {t('จองนัดหมาย', 'Book Appointment')}
-                  </button>
                 </div>
               </motion.div>
             );
           })}
         </div>
+      )}
+      </section>
+
+      {/* Health Fund & Insurance Section */}
+      <section className="max-w-7xl mx-auto px-6 py-10">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="bg-gold p-10 rounded-[4rem] flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-[80px] rounded-full -mr-20 -mt-20" />
+          
+          <div className="space-y-6 relative z-10 text-navy max-w-xl">
+            <div className="flex items-center gap-3 bg-navy/5 px-4 py-2 rounded-full w-fit border border-navy/10">
+              <ShieldCheck className="text-navy" size={20} />
+              <span className="text-[10px] font-black uppercase tracking-widest">{t('เคลมประกันสุขภาพได้', 'Health Fund Claimable')}</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-serif font-black italic leading-[1.1]">
+              Professional Remedial <br /> & Health Fund Claims
+            </h2>
+            <p className="text-navy/70 font-medium leading-relaxed">
+              {t(
+                'เรามีหมอนวดที่มีใบรับรองระดับมืออาชีพ พร้อมให้บริการนวดบำบัดที่สามารถเคลมประกันสุขภาพ (Remedial Massage) ได้โดยตรงผ่านระบบ HICAPS หรือขอใบเสร็จเพื่อไปเคลมเองได้ค่ะ',
+                'Experience professional care with our qualified Remedial Massage therapists. We support instant HICAPS claims and provide official receipts for all major private health funds in Australia.'
+              )}
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 opacity-50 font-black text-[8px] uppercase tracking-[0.2em] italic">
+              <span>• BUPA</span>
+              <span>• MEDIBANK</span>
+              <span>• AHM</span>
+              <span>• NIB</span>
+            </div>
+          </div>
+
+          <div className="relative z-10 w-full md:w-auto">
+            <div className="bg-navy p-8 rounded-[3rem] border border-gold/20 shadow-2xl space-y-6 text-center md:text-left">
+              <div className="w-16 h-16 rounded-2xl bg-gold/10 flex items-center justify-center text-gold border border-gold/20 mx-auto md:mx-0">
+                <QrCode size={32} />
+              </div>
+              <div>
+                <h4 className="text-gold font-serif font-black text-xl italic mb-2">Instant HICAPS</h4>
+                <p className="text-gold/50 text-xs leading-relaxed max-w-[200px]">
+                  Swipe your health fund card and only pay the gap. Easy and fast.
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Find Us Section */}
-      {/* Find Us Section */}
-      <section id="location" className="relative overflow-hidden bg-white">
+      <section id="location" className="relative overflow-hidden bg-navy">
         {/* Top Half Background Image */}
-        <div className="absolute top-0 left-0 right-0 h-[40%] z-0">
+        <div className="absolute top-0 left-0 right-0 h-[50%] z-0">
           <img 
             src="https://images.unsplash.com/photo-1600334129128-685c5582fd35?q=80&w=2070&auto=format&fit=crop" 
             alt="Massage Atmosphere" 
-            className="w-full h-full object-cover opacity-20"
+            className="w-full h-full object-cover opacity-10"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-navy" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 py-20 relative z-10 space-y-12">
+        <div className="max-w-4xl mx-auto px-6 py-32 relative z-10 space-y-12">
           <div className="text-center space-y-4">
-            <span className="text-sage text-xs font-bold uppercase tracking-[0.4em]">Visit Us</span>
-            <h2 className="text-4xl font-serif font-bold text-forest">Find Us</h2>
+            <span className="text-gold text-xs font-black uppercase tracking-[0.6em] opacity-40">{t('มาพบเราได้ที่นี่', 'Visit Us')}</span>
+            <h2 className="text-5xl font-serif font-black text-gold italic">{t('การเดินทาง', 'Find Our Sanctuary')}</h2>
           </div>
 
-          {/* Stacked Info Grid (Top Half) */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-6">
             {/* Address Card */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-cream p-6 rounded-2xl border border-primary/5 flex items-center gap-4 shadow-sm"
+              className="flex-1 bg-white/5 p-8 rounded-[2.5rem] border border-gold/10 flex items-center gap-6 shadow-2xl backdrop-blur-md"
             >
-              <div className="w-10 h-10 rounded-full bg-forest/5 flex items-center justify-center text-forest flex-shrink-0">
-                <MapPin size={18} />
+              <div className="w-12 h-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold flex-shrink-0 border border-gold/20">
+                <MapPin size={24} />
               </div>
               <div className="text-left">
-                <p className="text-[9px] font-bold text-sage uppercase tracking-widest">Location</p>
-                <p className="text-sm font-serif font-bold text-forest leading-tight">Level 1/76 Pier Street, Altona 3018</p>
+                <p className="text-[9px] font-black text-gold/40 uppercase tracking-[0.3em] mb-1">Location</p>
+                <p className="text-lg font-serif font-black text-gold leading-tight italic">Level 1/76 Pier Street, Altona 3018</p>
               </div>
             </motion.div>
 
@@ -422,26 +553,24 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="bg-cream p-6 rounded-2xl border border-primary/5 flex items-center gap-4 shadow-sm"
+              className="flex-1 bg-white/5 p-8 rounded-[2.5rem] border border-gold/10 flex items-center gap-6 shadow-2xl backdrop-blur-md"
             >
-              <div className="w-10 h-10 rounded-full bg-forest/5 flex items-center justify-center text-forest flex-shrink-0">
-                <Clock size={18} />
+              <div className="w-12 h-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold flex-shrink-0 border border-gold/20">
+                <Clock size={24} />
               </div>
               <div className="text-left">
-                <p className="text-[9px] font-bold text-sage uppercase tracking-widest">Opening Hours</p>
-                <p className="text-sm font-serif font-bold text-forest leading-tight">7 Days: 10:00 AM - 8:00 PM</p>
+                <p className="text-[9px] font-black text-gold/40 uppercase tracking-[0.3em] mb-1">Sanctuary Hours</p>
+                <p className="text-lg font-serif font-black text-gold leading-tight italic">Every Day: 10:00 AM - 8:00 PM</p>
               </div>
             </motion.div>
           </div>
 
-          {/* Integrated Action & Map (Bottom Half) */}
-          <div className="space-y-6">
-            {/* Embedded Map */}
+          <div className="space-y-8">
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="rounded-[2.5rem] overflow-hidden shadow-lg border-4 border-white aspect-video relative"
+              className="rounded-[3.5rem] overflow-hidden shadow-2xl border border-gold/20 aspect-video relative group"
             >
               <iframe 
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3148.834714652417!2d144.8284563!3d-37.8641499!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad6613867c69999%3A0x5045675218ce6e0!2s76%20Pier%20St%2C%20Altona%20VIC%203018!5e0!3m2!1sen!2sau!4v1712640000000!5m2!1sen!2sau" 
@@ -451,19 +580,19 @@ export default function Home() {
                 allowFullScreen 
                 loading="lazy" 
                 referrerPolicy="no-referrer-when-downgrade"
-                className="transition-all duration-700"
+                className="grayscale transition-all duration-1000 group-hover:grayscale-0 contrast-[1.1]"
               />
+              <div className="absolute inset-0 pointer-events-none border-[12px] border-navy/20 rounded-[3.5rem]" />
             </motion.div>
 
-            {/* Primary Navigation Button (Dark Green) */}
             <motion.button 
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.02, backgroundColor: '#c5a059', color: '#000080' }}
               whileTap={{ scale: 0.98 }}
               onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(storeConfig.address)}`, '_blank')}
-              className="w-full bg-primary text-cream py-3.5 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-3"
+              className="w-full bg-white/5 text-gold py-6 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] shadow-xl border border-gold/30 flex items-center justify-center gap-4 transition-all"
             >
-              <Map size={18} />
-              GET DIRECTIONS
+              <Map size={20} />
+              {t('เปิด Google Maps', 'Start Navigation')}
             </motion.button>
           </div>
         </div>

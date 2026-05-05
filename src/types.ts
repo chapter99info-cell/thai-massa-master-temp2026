@@ -27,6 +27,7 @@ export interface Service {
   category: 'MASSAGE' | 'FACIAL' | 'SPA_PACKAGES' | string;
   imageUrl: string;
   isFeatured?: boolean;
+  postCareTips?: { th: string; en: string }[];
 }
 
 export interface CartItem extends Service {
@@ -50,6 +51,7 @@ export interface StaffStatus {
   remainingSeconds?: number;
   currentCustomer?: string;
   currentService?: string;
+  currentServiceId?: string;
   currentPrice?: number;
   currentBedNumber?: string;
   currentBedType?: 'Foot' | 'Body' | 'VIP';
@@ -133,4 +135,32 @@ export interface AppSettings {
   heroVideoUrl?: string;
   heroImageUrl?: string;
   shopDescription?: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  birthday?: string; // YYYY-MM-DD
+  memberTier: 'General' | 'Silver' | 'Gold' | 'VIP';
+  totalVisits: number;
+  totalSpent: number;
+  lastVisitDate: string; // ISO string
+  notes?: string;
+}
+
+export interface GiftVoucher {
+  id: string;
+  code: string;
+  value: number;
+  balance: number;
+  recipientEmail?: string;
+  recipientName?: string;
+  senderName: string;
+  senderEmail?: string;
+  message?: string;
+  expiryDate: string;
+  isRedeemed: boolean;
+  type: 'E-VOUCHER' | 'PHYSICAL';
 }
