@@ -129,15 +129,16 @@ export default function Home() {
       <section className="relative h-[95vh] flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Full-width Hero Image or Video */}
         <div className="absolute inset-0 z-0">
-          <motion.img 
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 15, ease: "linear" }}
-            src="https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=2070&auto=format&fit=crop" 
-            alt="Hero" 
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
             className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
+          >
+            <source src="https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/VDO%2FCinematic_video_of_a_luxurious.mp4?alt=media&token=3c1ac19c-067a-411f-905e-df2a5ef3ccbd" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
           <div className="absolute inset-0 ocean-overlay" />
           
           {/* Subtle Ocean Glows */}
@@ -145,41 +146,55 @@ export default function Home() {
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-turquoise/10 blur-[120px] rounded-full" />
         </div>
 
-        <div className="relative z-10 px-6 max-w-5xl space-y-8">
+        <div className="relative z-10 px-6 max-w-5xl flex flex-col items-center">
+          {/* Main Titles */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+            className="mb-12"
           >
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-serif font-black text-white mb-2 tracking-tight leading-[1.1] italic drop-shadow-2xl">
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-serif font-black text-white mb-4 tracking-tight leading-[1.1] italic drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
               Premium Thai Massage <br /> & Wellness in Altona
             </h2>
-            <p className="text-white/90 font-serif text-xl md:text-2xl mt-4 font-medium drop-shadow-lg">
+            <p className="text-white/90 font-serif text-xl md:text-2xl font-medium drop-shadow-lg">
               Experience the art of healing with our expert therapists.
             </p>
           </motion.div>
 
+          {/* Circular BOOK NOW Button (Reference Style) */}
           <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
+            className="relative mb-8"
+          >
+            <Link 
+              to="/book"
+              className="group relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-[#1e4620]/90 border-[6px] border-[#d4af37]/30 flex flex-col items-center justify-center text-white shadow-[0_0_60px_rgba(30,70,32,0.6)] hover:scale-105 hover:bg-[#2a5d2c] transition-all duration-500 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent" />
+              <span className="relative z-10 text-3xl md:text-4xl font-serif font-black tracking-tighter leading-none italic uppercase">
+                Book <br /> Now
+              </span>
+              {/* Inner Glow Effect */}
+              <div className="absolute inset-0 rounded-full border border-white/10 shadow-inner" />
+            </Link>
+          </motion.div>
+
+          {/* Subtitle from Reference */}
+          <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-[2.5rem] max-w-2xl mx-auto space-y-4 shadow-2xl"
+            transition={{ delay: 1 }}
+            className="text-white font-serif text-2xl md:text-3xl italic tracking-wide drop-shadow-lg mb-12"
           >
-            <p className="text-white font-serif italic text-lg leading-relaxed">"{t('ผ่อนคลาย สบายครบเครื่องที่เดียว', 'Pure Relaxation – Your Sanctuary in Altona')}"</p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <span className="px-5 py-2 bg-gold text-navy rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
-                "{t('ศาสตร์นวดไทยพรีเมียม', 'Premium Thai Healing')}"
-              </span>
-              <span className="px-5 py-2 bg-white/20 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/30 backdrop-blur-sm">
-                "{t('ฟื้นฟูร่างกายด้วยมืออาชีพ', 'Expert Muscle Recovery')}"
-              </span>
-            </div>
-          </motion.div>
-          
+            Experience Tranquility.
+          </motion.p>
+
           <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 1.2 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-6"
           >
             <Link 

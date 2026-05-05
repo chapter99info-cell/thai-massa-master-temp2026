@@ -96,36 +96,36 @@ export default function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Premium Footer */}
-      <footer className="bg-charcoal text-white pt-20 pb-32 md:pb-20 px-6 border-t border-white/5">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16 border-b border-white/5 pb-16">
+      <footer className="bg-navy text-white pt-20 pb-32 md:pb-20 px-6 border-t border-white/10">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16 border-b border-white/10 pb-16">
           {/* Column 1: Brand */}
           <div className="space-y-6">
             <h3 className="font-serif text-2xl font-black text-gold mb-4 italic">Premium Thai Wellness</h3>
-            <p className="text-sm text-white/40 mb-6">{storeConfig.address}</p>
-            <div className="inline-block bg-gold/5 border border-gold/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gold">
+            <p className="text-sm text-white/60 mb-6">{storeConfig.address}</p>
+            <div className="inline-block bg-gold/10 border border-gold/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gold shadow-lg shadow-gold/5">
               HICAPS & Health Rebates Available
             </div>
           </div>
 
           {/* Column 2: Quick Links */}
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gold/60">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-white/40 font-medium">
-              <li><Link to="/" className="hover:text-gold transition-colors uppercase tracking-widest text-[10px]">Services</Link></li>
-              <li><Link to="/" className="hover:text-gold transition-colors uppercase tracking-widest text-[10px]">Prices</Link></li>
-              <li><Link to="/book" className="hover:text-gold transition-colors uppercase tracking-widest text-[10px]">Book Now</Link></li>
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gold">Quick Links</h4>
+            <ul className="space-y-2 text-sm text-white/70 font-medium">
+              <li><Link to="/" className="hover:text-gold transition-colors uppercase tracking-[0.2em] text-[10px]">Services</Link></li>
+              <li><Link to="/" className="hover:text-gold transition-colors uppercase tracking-[0.2em] text-[10px]">Prices</Link></li>
+              <li><Link to="/book" className="hover:text-gold transition-colors uppercase tracking-[0.2em] text-[10px]">Book Now</Link></li>
             </ul>
           </div>
 
           {/* Column 3: Contact */}
           <div className="space-y-6">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gold/60">Contact Us</h4>
-            <a href={`tel:${storeConfig.phone}`} className="text-3xl font-serif font-black text-gold block hover:text-white transition-colors">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gold">Contact Us</h4>
+            <a href={`tel:${storeConfig.phone}`} className="text-3xl font-serif font-black text-gold block hover:text-white transition-colors drop-shadow-sm">
               {storeConfig.phone}
             </a>
             <Link 
               to="/book"
-              className="w-full bg-gold text-navy py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center shadow-xl hover:scale-105 transition-all active:scale-95"
+              className="w-full bg-gold text-navy py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center shadow-xl hover:scale-[1.02] transition-all active:scale-95"
             >
               Book Reservation
             </Link>
@@ -133,7 +133,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Copyright Bar */}
-        <p className="text-center mt-10 text-[10px] text-white/20 uppercase tracking-[0.4em] font-black">
+        <p className="text-center mt-10 text-[10px] text-white/40 uppercase tracking-[0.4em] font-black">
           © {new Date().getFullYear()} Premium Thai Wellness. Powered by Chapter99 Solution
         </p>
       </footer>

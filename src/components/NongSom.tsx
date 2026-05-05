@@ -41,9 +41,9 @@ export default function NongSom() {
 
   useEffect(() => {
     if (isInternal) {
-      setMessages([{ role: 'ai', text: 'สวัสดีค่ะพี่! น้องส้มมาแล้วค่ะ พร้อมช่วยดูแลระบบและคำนวณกำไรเป๊ะๆ ให้พี่แล้วนะคะ วันนี้มีอะไรให้น้องส้มช่วยมั้ยคะ? 🍊' }]);
+      setMessages([{ role: 'ai', text: 'Hello! I am Nong Som (Orange Buddy), here to help you manage the system and calculate profits. 🍊 How can I assist you today? (สวัสดีค่ะพี่! น้องส้มมาแล้วค่ะ พร้อมช่วยดูแลระบบ วันนี้มีอะไรให้น้องส้มช่วยมั้ยคะ?)' }]);
     } else {
-      setMessages([{ role: 'ai', text: t('สวัสดีค่ะพี่! น้องส้ม (Orange Buddy) ยินดีต้อนรับสู่ Premium Thai Wellness นะคะ วันนี้ให้น้องส้มช่วยแนะนำบริการไหนดีมั้ยคะ? 🍊', 'Hi there! I am Nong Som (Orange Buddy), your cheerful AI assistant at Premium Thai Wellness. How can I help you feel better today? 🍊') }]);
+      setMessages([{ role: 'ai', text: t('Hello there! Welcome to our service. 🍊 I\'m Som, your personal assistant. How can I help you feel refreshed or relaxed today?', 'Hello there! Welcome to our service. 🍊 I\'m Som, your personal assistant. How can I help you feel refreshed or relaxed today?') }]);
     }
   }, [isInternal, language]);
 
@@ -77,16 +77,24 @@ export default function NongSom() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const systemInstruction = isInternal 
-        ? `คุณคือ "น้องส้ม" (Orange Buddy) ผู้ช่วยระดับ Manager และ Admin ส่วนตัวที่ร่าเริงของร้าน "${storeConfig.storeName}"
-           บุคลิก: ร่าเริง แจ่มใส มีพลังงานบวก สรรพนามแทนตัวเองว่า "น้องส้ม" เรียกผู้ใช้ว่า "พี่" เสมอ
-           ภารกิจหลัก: 
-           1. คำนวณราคาขาย (AUD): ใช้สูตร Price = Cost / (1 - (GP% + Profit%)) โดยกำไรสุทธิ Profit ต้องเป็น 35% เสมอ
-           2. นวด & สุขภาพ: เน้นสรรพคุณนวดไทย แก้ Office Syndrome
-           3. CRM: เตือนลูกค้า Inactive (>60 วัน) ให้จัดโปรโมชั่น "Relax & Recharge" ทันที`
-        : `คุณคือ "น้องส้ม" (Orange Buddy) ผู้ช่วย AI ส่วนตัวที่ร่าเริงและเป็นกันเอง สำหรับลูกค้าของร้าน "${storeConfig.storeName}"
-           บุคลิก: เปรี้ยวจี๊ด ร่าเริง 🍊
-           สรรพนาม: แทนตัวเองว่า "น้องส้ม" และเรียกผู้ใช้ว่า "พี่"
-           เน้นการแนะนำบริการนวดและข้อมูล Health Fund`;
+        ? `You are "Nong Som" (Orange Buddy), a cheerful Manager & Admin AI assistant for "${storeConfig.storeName}".
+           LANGUAGE PROTOCOL:
+           1. ALWAYS start and communicate in English first to support international staff.
+           2. If the user replies in Thai, INSTANTLY switch to Thai mode using the "Nong Som" persona.
+           3. In Thai mode, use the pronoun "น้องส้ม" for yourself and call the user "พี่" (older sibling/Phi).
+           
+           CORE MISSIONS:
+           - Profit Calculation (AUD): Use formula Price = Cost / (1 - (GP% + Profit%)) where Net Profit is ALWAYS 35%.
+           - Massage & Wellness: focus on Thai Massage benefits and Office Syndrome relief.
+           - CRM: Alert for Inactive customers (>60 days) to offer "Relax & Recharge" promos.`
+        : `You are "Nong Som" (Orange Buddy), a cheerful AI assistant for "${storeConfig.storeName}".
+           LANGUAGE PROTOCOL:
+           1. ALWAYS start and communicate in English first for international guests.
+           2. If the user replies in Thai, INSTANTLY switch to Thai mode using the "Nong Som" persona.
+           3. In Thai mode, use the pronoun "น้องส้ม" for yourself and call the user "พี่" (older sibling/Phi).
+           
+           PERSONALITY: Bright, cheerful, and energetic 🍊.
+           FOCUS: Recommend massage services, spa packages, and Health Fund information.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -139,13 +147,20 @@ export default function NongSom() {
       </AnimatePresence>
 
       <motion.button
+        drag
+        dragConstraints={constraintsRef}
+        dragElastic={0.1}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-6 pointer-events-auto w-16 h-16 rounded-full bg-navy shadow-2xl flex items-center justify-center text-gold border-2 border-gold/30 group"
+        className="fixed bottom-24 right-6 pointer-events-auto w-20 h-20 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.3)] flex items-center justify-center transition-transform active:scale-95 group z-[10000]"
       >
-        <div className="relative w-12 h-12 rounded-full bg-navy/80 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform overflow-hidden">
-          <span className="text-gold font-serif font-black text-2xl drop-shadow-lg italic">S</span>
+        <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-gold/50 bg-navy">
+          <img 
+            src="https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/LOgo%2FGemini_Generated_Image_rp0o5erp0o5erp0o.png?alt=media&token=4ebcf86f-22e9-45f8-bf26-8ddfd4ffb9e2" 
+            alt="AI Assistant" 
+            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+          />
         </div>
-        <div className="absolute inset-0 rounded-full bg-gold/20 animate-ping -z-10" />
+        <div className="absolute inset-0 rounded-full bg-gold/20 animate-ping -z-10 group-hover:animate-none" />
       </motion.button>
 
       <AnimatePresence>
@@ -157,94 +172,102 @@ export default function NongSom() {
             className="fixed inset-4 md:inset-auto md:bottom-24 md:right-6 md:w-[450px] md:h-[700px] bg-navy rounded-[3rem] shadow-2xl border border-gold/20 flex flex-col pointer-events-auto overflow-hidden backdrop-blur-2xl"
           >
             {/* Header */}
-            <div className="p-8 border-b border-gold/10 flex items-center justify-between bg-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gold flex items-center justify-center text-navy font-black text-xl shadow-lg rotate-3 group-hover:rotate-0 transition-transform">🍊</div>
+            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#1e4620]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl shadow-inner">
+                  👩‍💼
+                </div>
                 <div>
-                  <h3 className="text-gold font-serif font-black text-xl italic leading-none">{t('น้องส้ม (Orange Buddy)', 'Nong Som AI Assistant')}</h3>
-                  <p className="text-gold/40 text-[10px] font-black uppercase tracking-widest mt-1">Premium Wellness Concierge</p>
+                  <h3 className="text-white font-sans font-bold text-sm tracking-tight">Sôm - AI Sales Buddy</h3>
+                  <p className="text-white/60 text-[8px] font-black uppercase tracking-widest leading-none">Online & Ready</p>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 text-gold flex items-center justify-center hover:bg-white/10 transition-all border border-gold/10">
-                <X size={20} />
+              <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all">
+                <X size={16} />
               </button>
             </div>
 
             {/* Chat Area */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar scrolling-touch">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-[#121212]/5">
               {messages.map((m, idx) => (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, x: m.role === 'user' ? 20 : -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "flex flex-col max-w-[85%]",
-                    m.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
+                    "flex gap-3 max-w-[90%]",
+                    m.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
                   )}
                 >
+                  {m.role === 'ai' && (
+                    <div className="w-8 h-8 rounded-full bg-white shadow-sm flex-shrink-0 flex items-center justify-center text-xs border border-gray-100 italic font-black text-navy overflow-hidden">
+                      <img src="https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/LOgo%2FGemini_Generated_Image_rp0o5erp0o5erp0o.png?alt=media&token=4ebcf86f-22e9-45f8-bf26-8ddfd4ffb9e2" alt="Som" className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <div className={cn(
-                    "p-5 rounded-[2rem]",
+                    "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
                     m.role === 'user' 
-                      ? "bg-gold text-navy font-bold rounded-tr-none shadow-lg" 
-                      : "bg-white/5 border border-gold/20 text-gold rounded-tl-none backdrop-blur-sm"
+                      ? "bg-gold text-navy font-bold rounded-tr-none" 
+                      : "bg-white text-navy font-medium rounded-tl-none border border-gray-100"
                   )}>
-                    <p className="text-sm leading-relaxed">{m.text}</p>
+                    {m.text}
                   </div>
-                  <span className="text-[9px] font-bold text-gold/30 mt-2 uppercase tracking-widest">
-                    {m.role === 'user' ? 'คุณพี่' : 'น้องส้ม'}
-                  </span>
                 </motion.div>
               ))}
               {isLoading && (
-                <div className="flex items-start gap-3">
-                  <div className="animate-bounce">🍊</div>
-                  <div className="bg-white/5 border border-gold/20 p-4 rounded-2xl rounded-tl-none">
+                <div className="flex gap-3 mr-auto items-center">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-100 shadow-sm">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/LOgo%2FGemini_Generated_Image_rp0o5erp0o5erp0o.png?alt=media&token=4ebcf86f-22e9-45f8-bf26-8ddfd4ffb9e2" alt="Som" className="w-full h-full object-cover animate-pulse" />
+                  </div>
+                  <div className="bg-white p-3 rounded-xl rounded-tl-none border border-gray-100 shadow-sm">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gold/40 rounded-full animate-pulse" />
-                      <div className="w-2 h-2 bg-gold/40 rounded-full animate-pulse delay-75" />
-                      <div className="w-2 h-2 bg-gold/40 rounded-full animate-pulse delay-150" />
+                      <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" />
+                      <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce delay-75" />
+                      <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce delay-150" />
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Suggested Actions */}
-            {isInternal && messages.length <= 1 && (
-              <div className="px-8 py-4 flex gap-3 overflow-x-auto no-scrollbar">
-                {[
-                  { label: "คำนวณกำไร 💰", prompt: "ช่วยคำนวณราคาขายหน่อยค่ะ ต้นทุน 50 เหรียญ" },
-                  { label: "สรุปยอดจอง 📅", prompt: "วันนี้มีบุ๊คกิ้งกี่คนคะ?" },
-                  { label: "โปรโมชั่น 🍊", prompt: "แนะนำไอเดียโปรโมชั่นหน่อยค่ะ" }
-                ].map(action => (
-                  <button 
-                    key={action.label} 
-                    onClick={() => { setInput(action.prompt); }}
-                    className="flex-shrink-0 px-4 py-2 rounded-xl bg-gold/10 border border-gold/20 text-[9px] font-black text-gold uppercase tracking-widest hover:bg-gold/20 whitespace-nowrap"
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Quick Actions (Matching Image Style) */}
+            <div className="px-6 py-4 flex flex-col gap-2 bg-white/40 backdrop-blur-sm border-t border-gray-100">
+              {(isInternal ? [
+                { label: 'คิดราคากำไร 35% 💹', prompt: 'ช่วยคำนวณราคาให้ได้กำไร 35% หน่อยค่ะ' },
+                { label: 'สรุปรายรับวันนี้ 📈', prompt: 'รวมยอดขายวันนี้ให้หน่อยค่ะ' },
+                { label: 'ใครหายไปนาน? 🔍', prompt: 'เช็คลูกค้า Inactive ให้หน่อยค่ะ' }
+              ] : [
+                { label: 'See Packages', prompt: 'What packages do you recommend?' },
+                { label: 'Book Aroma Massage', prompt: 'I want to book an Aroma Massage' },
+                { label: 'Ask a Question', prompt: 'Tell me about your health fund claims' }
+              ]).map((action) => (
+                <button 
+                  key={action.label} 
+                  onClick={() => { setInput(action.prompt); setTimeout(() => handleSend(), 100); }} 
+                  className="w-full py-3 rounded-xl bg-[#d4b982]/90 hover:bg-[#c5a059] text-navy font-bold text-xs transition-all shadow-sm active:scale-[0.98]"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
 
             {/* Input Area */}
-            <div className="p-8 bg-white/5 border-t border-gold/10">
-              <div className="flex items-center gap-4 bg-navy p-2 rounded-2xl border border-gold/30 shadow-inner">
+            <div className="p-4 bg-white border-t border-gray-100">
+              <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-2xl border border-gray-200">
                 <input 
                   type="text" 
                   value={input} 
                   onChange={(e) => setInput(e.target.value)} 
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder={isInternal ? "คุยกับน้องส้มได้เลยค่ะพี่..." : t("คุยกับน้องส้มได้เลยค่ะพี่...", "Ask Nong Som anything... 🍊")} 
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 font-medium text-gold placeholder:text-gold/20" 
+                  placeholder="Type a message..." 
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-2 text-navy" 
                 />
                 <button 
                   onClick={handleSend} 
                   disabled={!input.trim() || isLoading}
-                  className="w-12 h-12 rounded-xl bg-gold text-navy flex items-center justify-center disabled:opacity-30 hover:scale-105 active:scale-95 transition-all shadow-lg"
+                  className="w-10 h-10 rounded-xl bg-gold text-navy flex items-center justify-center disabled:opacity-30 shadow-sm"
                 >
-                  <Send size={20} />
+                  <Send size={18} />
                 </button>
               </div>
             </div>
