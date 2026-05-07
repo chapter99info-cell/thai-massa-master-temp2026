@@ -23,18 +23,25 @@ import {
   Receipt,
   Download,
   RefreshCw,
-  Calendar
+  Calendar,
+  ImagePlus,
+  Film,
+  Sparkles,
+  Palette
 } from 'lucide-react';
 import { storeConfig, getAppSettings, saveAppSettings } from '../config';
 import { AppSettings } from '../types';
 import { cn } from '../lib/utils';
 import { usePin } from '../contexts/PinContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useBookings } from '../contexts/BookingContext';
 
 export default function MasterAdminDashboard() {
   const { logout } = usePin();
   const { t } = useLanguage();
+  const { bookings } = useBookings();
   const [settings, setSettings] = useState<AppSettings>(getAppSettings());
+  const [activeTab, setActiveTab] = useState<'overview' | 'profit' | 'settings' | 'creative'>('overview');
   const [miraMessage, setMiraMessage] = useState<string | null>(
     t('สวัสดีค่ะพี่แสน หน้าจอนี้มีแค่เราสองคนที่รู้นะคะ พี่แสนเลือกเปิดระบบตามที่ลูกค้าจ่ายเงินได้เลยค่ะ หนูจะช่วยพี่เฝ้าดูและคำนวณค่า GP ให้พี่แสนแบบแม่นยำที่สุดค่ะ', 'Welcome, Master Admin. This screen is for your eyes only. You can enable features based on client payments. I will help you monitor and calculate GP fees accurately.')
   );
@@ -83,9 +90,25 @@ export default function MasterAdminDashboard() {
     { id: 'l5', amount: 120, timestamp: new Date(Date.now() - 86400000 * 20).toISOString(), customer: 'Chris Evans', service: 'Hot Stone Massage' },
   ]);
 
+  const [expenseLog] = useState([
+    { id: 'e1', amount: 2000, category: 'Rent', description: 'Monthly Shop Rent', timestamp: new Date(Date.now() - 86400000 * 5).toISOString() },
+    { id: 'e2', amount: 150, category: 'Utilities', description: 'Electricity & Water', timestamp: new Date(Date.now() - 86400000 * 2).toISOString() },
+    { id: 'e3', amount: 300, category: 'Supplies', description: 'Massage Oils & Linens', timestamp: new Date(Date.now() - 86400000 * 10).toISOString() },
+  ]);
+
   const filteredSales = salesLog.filter(sale => sale.timestamp >= resetDate);
   const totalRevenue = filteredSales.reduce((acc, sale) => acc + sale.amount, 0);
+  const totalExpenses = expenseLog.reduce((acc, exp) => acc + exp.amount, 0);
+  const grossProfit = totalRevenue - totalExpenses;
+  const estimatedTax = Math.max(0, grossProfit * 0.1); // Simple 10% tax estimation
+  const netProfit = grossProfit - estimatedTax;
+  
   const totalFee = (totalRevenue * settings.gpFeePercent) / 100;
+
+  // Real Health Fund Stats from current bookings
+  const healhFundBookings = bookings.filter(b => b.healthFund);
+  const totalHealthFundClaims = healhFundBookings.length;
+  const totalClaimAmount = healhFundBookings.reduce((acc, b) => acc + (b.price || 0), 0);
 
   const handleSave = () => {
     saveAppSettings(settings);
@@ -161,9 +184,217 @@ export default function MasterAdminDashboard() {
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 no-print">
-        {/* Master Revenue Dashboard */}
-        <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-10 lg:col-span-2">
+      {/* Tab Navigation */}
+      <nav className="flex flex-wrap gap-4 no-print">
+        {[
+          { id: 'overview', label: t('ภาพรวมระบบ', 'System Overview'), icon: <ShieldCheck size={18} /> },
+          { id: 'profit', label: t('กำไร-ขาดทุน', 'Profit & Loss'), icon: <TrendingUp size={18} /> },
+          { id: 'creative', label: t('AI Creative Producer', 'AI Producer'), icon: <Palette size={18} /> },
+          { id: 'settings', label: t('ตั้งค่าร้านค้า', 'Store Config'), icon: <Settings size={18} /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "px-8 py-4 rounded-2xl font-bold flex items-center gap-3 transition-all text-xs uppercase tracking-widest",
+              activeTab === tab.id 
+                ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" 
+                : "bg-slate-900/50 text-slate-400 hover:text-white border border-slate-800"
+            )}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === 'overview' && (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 no-print">
+            {/* Health Fund Analytics - Master Admin Feature */}
+            <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8 lg:col-span-2">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-serif font-bold text-white flex items-center gap-3">
+              <ShieldCheck className="text-emerald-400" />
+              {t('สถิติการใช้ Health Fund (Master Admin)', 'Health Fund Analytics')}
+            </h2>
+            <p className="text-slate-500 text-sm">{t('สรุปสถิติการเคลมประกันของลูกค้าเพื่อวิเคราะห์พฤติกรรมการใช้บริการนะคบอส', 'Summarize health fund claims to analyze customer behavior.')}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-emerald-500/5 border border-emerald-500/10 p-8 rounded-[2.5rem] flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <FileText size={32} />
+              </div>
+              <div>
+                <p className="text-emerald-400/60 text-[10px] uppercase font-black tracking-widest leading-none mb-1">Total HF Claims</p>
+                <h4 className="text-3xl font-serif font-bold text-white">{totalHealthFundClaims}</h4>
+                <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Bookings with Fund ID</p>
+              </div>
+            </div>
+
+            <div className="bg-indigo-500/5 border border-indigo-500/10 p-8 rounded-[2.5rem] flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <TrendingUp size={32} />
+              </div>
+              <div>
+                <p className="text-indigo-400/60 text-[10px] uppercase font-black tracking-widest leading-none mb-1">HF Volume (AUD)</p>
+                <h4 className="text-3xl font-serif font-bold text-white">${totalClaimAmount.toFixed(2)}</h4>
+                <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Revenue through insurance</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PWA Sync Monitor - Master Admin Duty */}
+        <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8 lg:col-span-2">
+          <div className="flex justify-between items-center bg-slate-800/50 p-6 rounded-[2rem] border border-indigo-500/20">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <RefreshCw className="animate-spin-slow" size={24} />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg leading-tight">{t('PWA Offline Sync Monitor', 'PWA Offline Sync Monitor')}</h3>
+                <p className="text-slate-500 text-xs">{t('ตรวจสอบข้อมูลที่ค้างอยู่ในเครื่องลูกค้า (IndexedDB)', 'Monitoring data stored in local IndexedDB.')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20 uppercase tracking-widest">System Online</span>
+              <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-full border border-indigo-500/20 uppercase tracking-widest">No Lag Detected</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[ 
+              { label: 'Mira Altona', status: 'Healthy', lag: '0s', color: 'emerald' },
+              { label: 'Chapter99 Massage', status: 'Healthy', lag: '2s', color: 'emerald' },
+              { label: 'Syd Wellness', status: 'Syncing', lag: '15s', color: 'amber' },
+              { label: 'Thai Garlic', status: 'Healthy', lag: '0s', color: 'emerald' }
+            ].map((store) => (
+              <div key={store.label} className="bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-bold text-xs">{store.label}</span>
+                  <div className={`w-2 h-2 rounded-full bg-${store.color}-400 animate-pulse`} />
+                </div>
+                <div className="flex justify-between items-end mt-2">
+                  <span className="text-slate-500 text-[10px] uppercase font-bold">Latency</span>
+                  <span className={`text-${store.color}-400 font-mono text-sm font-bold`}>{store.lag}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  )}
+
+      {activeTab === 'profit' && (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Profit & Loss Statement - Master Admin Board */}
+          <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-indigo-500/20 space-y-10 lg:col-span-2 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -z-10" />
+          
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-1">
+              <h2 className="text-3xl font-serif font-bold text-white flex items-center gap-4">
+                <Receipt className="text-indigo-400" size={32} />
+                {t('รายงานกำไร-ขาดทุน (P&L Statement)', 'Profit & Loss Statement')}
+              </h2>
+              <p className="text-slate-500 text-sm">{t('สรุปผลประกอบการจริงหลังจากหักภาษีและค่าใช้จ่าย (Chop the Money!)', 'Real performance summary after tax and expenses.')}</p>
+            </div>
+            <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+              <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">{t('Tax Optimizer Active', 'Tax Optimizer Active')}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50">
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('Revenue', 'Revenue')}</p>
+              <h4 className="text-2xl font-bold text-white">${totalRevenue.toFixed(2)}</h4>
+            </div>
+            <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50">
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('Expenses', 'Expenses')}</p>
+              <h4 className="text-2xl font-bold text-rose-400">-${totalExpenses.toFixed(2)}</h4>
+            </div>
+            <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50">
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('Est. Tax (10%)', 'Est. Tax (10%)')}</p>
+              <h4 className="text-2xl font-bold text-amber-400">-${estimatedTax.toFixed(2)}</h4>
+            </div>
+            <div className={cn(
+              "p-6 rounded-3xl border shadow-xl transition-transform hover:scale-105",
+              netProfit >= 0 ? "bg-emerald-500/10 border-emerald-500/30" : "bg-rose-500/10 border-rose-500/30"
+            )}>
+              <p className={cn("font-black uppercase tracking-widest text-[10px] mb-1", netProfit >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                {t('Net Profit', 'Net Profit')}
+              </p>
+              <h4 className="text-3xl font-bold text-white">${netProfit.toFixed(2)}</h4>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Expense Breakdown */}
+            <div className="bg-slate-800/30 rounded-3xl border border-slate-700/50 overflow-hidden">
+              <div className="p-5 border-b border-slate-700 bg-slate-700/30 flex justify-between items-center">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Expense Breakdown / รายจ่าย', 'Expense Breakdown')}</h4>
+                <div className="flex gap-2">
+                   <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                {expenseLog.map(exp => (
+                  <div key={exp.id} className="flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-xs">💸</div>
+                      <div>
+                        <p className="text-xs font-bold text-white group-hover:text-indigo-400 transition-colors">{exp.description}</p>
+                        <p className="text-[10px] text-slate-500">{exp.category} • {new Date(exp.timestamp).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-mono font-bold text-rose-400">-${exp.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('Total Deductible', 'Total Deductible')}</p>
+                   <p className="text-lg font-serif font-bold text-white">${totalExpenses.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tax Savings Tips */}
+            <div className="bg-indigo-500/5 rounded-3xl border border-indigo-500/20 p-8 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Heart size={20} fill="currentColor" />
+                </div>
+                <h4 className="text-lg font-serif font-bold text-white">{t('Nong Som\'s Tax Tips 🍊', 'Nong Som\'s Tax Tips')}</h4>
+              </div>
+              
+              <ul className="space-y-4">
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {t('พี่อย่าลืมเก็บใบเสร็จค่าป้าแม่บ้านและอุปกรณ์นวดนะคะ เอามาหักภาษีได้หมดเลยค่ะ!', 'Don\'t forget to keep receipts for cleaning and massage supplies—all are tax-deductible!')}
+                  </p>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {t('เตียงนวดใหม่หักค่าเสื่อมราคา (Depreciation) ได้นะคะพี่ ช่วยลดภาษีปีนี้ได้เยอะเลยค่ะ 🍊', 'New massage beds can be depreciated to significantly lower your taxes this year!')}
+                  </p>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">⚠️</div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {t('ถ้าร้านเก็บเงินสดเยอะ ต้องเอาเข้าแบงก์ให้ตรงยอดนะคะ บัญชีจะได้ไม่งงค่ะพี่ ❤️', 'If storing lots of cash, please deposit it into the bank to match the books—keep it clear for accounting!')}
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </div>
+          </section>
+
+          {/* Master Revenue Dashboard */}
+          <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-10 lg:col-span-2">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-1">
               <h2 className="text-3xl font-serif font-bold text-white flex items-center gap-4">
@@ -247,27 +478,117 @@ export default function MasterAdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                  {filteredSales.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-8 py-12 text-center text-slate-500 italic">
-                        {t('ไม่มีข้อมูลในรอบบิลนี้ค่ะ', 'No transactions found in this billing cycle.')}
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
-                <tfoot className="bg-indigo-500/5">
-                  <tr className="font-black text-white uppercase tracking-widest text-xs">
-                    <td colSpan={3} className="px-8 py-6 text-right">{t('Total Monthly Fee', 'Total Monthly Fee')}</td>
-                    <td colSpan={2} className="px-8 py-6 text-right text-2xl font-serif text-indigo-400">${totalFee.toFixed(2)}</td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           </div>
-        </section>
+          </section>
+        </div>
+      )}
 
-        {/* QR Code Section */}
-        <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8 lg:col-span-2">
+      {activeTab === 'creative' && (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-indigo-500/20 space-y-10 relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -z-10" />
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/30 shadow-lg rotate-3">
+                      <Palette size={32} />
+                    </div>
+                    <div>
+                       <h2 className="text-3xl font-serif font-bold text-white tracking-tight">{t('AI Creative Producer 🎨', 'AI Creative Producer')}</h2>
+                       <p className="text-slate-500 text-sm">{t('เนรมิตสื่อโฆษณาระดับโลก (Premium Thai Wellness Style)', 'World-class creative assets.')}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                   <div className="px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center gap-2">
+                      <Sparkles size={14} className="text-gold" />
+                      <span className="text-indigo-300 text-[10px] font-black uppercase tracking-widest">{t('PRO PRODUCER MODE', 'PRO PRODUCER MODE')}</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {[
+                        { img: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=400', label: t('Luxury Setup', 'Luxury Setup') },
+                        { img: 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?q=80&w=400', label: t('Orchid Detail', 'Orchid Detail') },
+                        { img: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?q=80&w=400', label: t('Serene Lighting', 'Serene Lighting') },
+                      ].map((item, idx) => (
+                        <div key={idx} className="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 hover:border-gold/30 transition-all cursor-zoom-in">
+                           <img src={item.img} alt={item.label} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        </div>
+                      ))}
+                   </div>
+
+                   <div className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700/50 space-y-6">
+                      <div className="flex items-center gap-3">
+                        <ImagePlus className="text-indigo-400" />
+                        <h3 className="text-xl font-serif font-bold text-white">{t('Image Production', 'Image Production')}</h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {[
+                           { id: 'orchid', label: t('Orchid & Gold', 'Orchid & Gold Ambiance'), prompt: 'Luxury Thai spa, golden orchids' },
+                           { id: 'zen', label: t('Zen Stone Garden', 'Zen Stone Garden'), prompt: 'Serene zen stones, bamboo fountain' },
+                           { id: 'oil', label: t('Aromatic Oil Setup', 'Aromatic Oil Setup'), prompt: 'Luxury oils, candlelight' },
+                           { id: 'treatment', label: t('Professional Treatment', 'Professional Treatment'), prompt: 'Expert massage, premium linens' },
+                           { id: 'candle', label: t('Warm Candlelight', 'Warm Candlelight Spa'), prompt: 'Warm candle bokeh, massage room ambiance' },
+                           { id: 'silk', label: t('Thai Silk Detail', 'Thai Silk Texture'), prompt: 'Close-up premium Thai silk texture, gold threads' }
+                         ].map(opt => (
+                           <button 
+                             key={opt.id}
+                             onClick={() => setMiraMessage(t(`กำลังสั่ง AI ให้สร้างภาพ ${opt.label} นะคะ... 🍊`, `Generating ${opt.label}... 🍊`))}
+                             className="p-4 bg-slate-900/50 border border-slate-700 rounded-2xl text-left hover:border-indigo-500/50 transition-all"
+                           >
+                             <span className="text-xs font-bold text-white block mb-1">{opt.label}</span>
+                             <p className="text-[9px] text-slate-500 italic line-clamp-1">"{opt.prompt}"</p>
+                           </button>
+                         ))}
+                      </div>
+                   </div>
+                </div>
+
+                <div className="space-y-6 h-full flex flex-col">
+                   <div className="bg-indigo-500/5 border border-indigo-500/20 p-8 rounded-3xl space-y-8 flex-1">
+                      <h4 className="text-lg font-serif font-bold text-white flex items-center gap-2">
+                        <ShieldCheck className="text-gold" size={20} />
+                        {t('Brand Identity Guard', 'Brand Identity Guard')}
+                      </h4>
+                      <p className="text-xs text-slate-400 leading-relaxed italic">
+                        {t('AI จะคุมโทนสีให้เข้ากับธีม Navy & Gold โดยอัตโนมัติค่ะ 🍊', 'AI maintains Navy & Gold palette.')}
+                      </p>
+                      <div className="space-y-5">
+                         <div className="space-y-3">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                               <span>Primary Brand Color</span>
+                               <span>#0A192F</span>
+                            </div>
+                            <div className="w-full h-8 rounded-xl bg-[#0A192F] border border-white/5" />
+                         </div>
+                         <div className="space-y-3">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                               <span>Accent Brand Color</span>
+                               <span>#B8962E</span>
+                            </div>
+                            <div className="w-full h-8 rounded-xl bg-[#B8962E] border border-white/5" />
+                         </div>
+                      </div>
+
+                      <div className="pt-6 border-t border-indigo-500/20 text-[10px] text-indigo-300 italic">
+                         * {t('เฉพาะ Master Admin 3501 เท่านั้นค่ะ', 'Only for Master Admin 3501')}
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* QR Code Section */}
+          <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8 lg:col-span-2">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="space-y-1 text-center md:text-left">
               <h2 className="text-2xl font-serif font-bold text-white flex items-center justify-center md:justify-start gap-3">
@@ -284,10 +605,10 @@ export default function MasterAdminDashboard() {
               {t('Generate QR Code', 'Generate QR Code')}
             </button>
           </div>
-        </section>
+          </section>
 
-        {/* Client Management & PIN Reset */}
-        <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8 lg:col-span-2">
+          {/* Client Management & PIN Reset */}
+          <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8 lg:col-span-2">
           <div className="space-y-1">
             <h2 className="text-2xl font-serif font-bold text-white flex items-center gap-3">
               <ShieldCheck className="text-red-400" />
@@ -326,10 +647,11 @@ export default function MasterAdminDashboard() {
                 </div>
              </div>
           </div>
-        </section>
+          </section>
 
-        {/* Client Config */}
-        <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Client Config */}
+            <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8">
           <div className="space-y-1">
             <h2 className="text-2xl font-serif font-bold text-white flex items-center gap-3">
               <Store className="text-indigo-400" />
@@ -398,6 +720,17 @@ export default function MasterAdminDashboard() {
               </div>
             </div>
 
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">{t('Tone of Voice (AI)', 'Tone of Voice (AI)')}</label>
+              <textarea 
+                value={settings.toneOfVoice || ''}
+                onChange={(e) => setSettings(prev => ({ ...prev, toneOfVoice: e.target.value }))}
+                placeholder="e.g. Warm, Luxury, Professional, Cheerful..."
+                className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-white focus:border-indigo-500 outline-none transition-all min-h-[100px] text-sm"
+              />
+              <p className="text-slate-500 text-[10px] italic">{t('* กำหนดโทนเสียงให้น้องส้มใช้ในการแปลและเขียนแคปชั่น', '* Set the tone for Nong Som to use in translations and captions.')}</p>
+            </div>
+
             <div className="p-6 bg-slate-800/50 rounded-3xl border border-slate-700 space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -452,10 +785,10 @@ export default function MasterAdminDashboard() {
               </div>
             </div>
           </div>
-        </section>
+            </section>
 
-        {/* Feature Toggles */}
-        <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8">
+            {/* Feature Toggles */}
+            <section className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800 space-y-8">
           <div className="space-y-1">
             <h2 className="text-2xl font-serif font-bold text-white flex items-center gap-3">
               <Settings className="text-indigo-400" />
@@ -558,8 +891,10 @@ export default function MasterAdminDashboard() {
                 </div>
               ))}
             </div>
-          </section>
-      </div>
+            </section>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-center pt-6 no-print">
         <button

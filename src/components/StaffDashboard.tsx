@@ -228,6 +228,15 @@ export default function StaffDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+                setSomMessage(t('กำลังเปิดระบบลงคิว Walk-in... กรุณาลดหน้าจอเพื่อไปที่ระบบหลังบ้านนะคะพี่ 🍊', 'Opening Walk-in queue system... Please switch to manager dashboard for registration. 🍊'));
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold hover:bg-indigo-100 transition-all border border-indigo-100"
+          >
+            <User size={18} />
+            <span className="text-[10px] uppercase">Walk-in / ลงคิว</span>
+          </button>
           {settings.showStaffClockInOut && (
             <div className="flex gap-2">
               <button 

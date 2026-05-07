@@ -16,7 +16,8 @@ import {
   Apple, 
   Smartphone, 
   CheckCircle2,
-  Info
+  Info,
+  Heart
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useBookings } from '../contexts/BookingContext';
@@ -36,11 +37,13 @@ export default function Cart() {
   const [step, setStep] = useState<CheckoutStep>('summary');
   const [showUpsell, setShowUpsell] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isStoreOpen = true; // This can be dynamic based on time
   
   // Details Step State
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
   const [healthFund, setHealthFund] = useState<string | null>(null);
+  const [memberId, setMemberId] = useState('');
   
   // Payment Step State
   const [paymentOption, setPaymentOption] = useState<'clinic' | 'online'>('clinic');
@@ -88,6 +91,7 @@ export default function Cart() {
       timeSlot: selectedTime,
       date: selectedDate,
       healthFund: healthFund,
+      memberId: memberId,
       paymentMethod: paymentOption,
       bedId: availableBed?.id,
       status: 'Reserved',
@@ -111,6 +115,8 @@ export default function Cart() {
   };
 
   const [somMessage, setSomMessage] = useState<string | null>(null);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const addUpsellItem = () => {
     const hotStoneService = {
@@ -231,7 +237,7 @@ export default function Cart() {
                 onClick={handleNextStep}
                 className="w-full py-4 gold-gradient text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity uppercase tracking-widest"
               >
-                Next: Booking Details
+                {isStoreOpen ? t('ถัดไป: ข้อมูลการจอง', 'Next: Booking Details') : t('จองล่วงหน้าสำหรับวันพรุ่งนี้', 'Pre-Order for Tomorrow')}
                 <ChevronRight size={20} />
               </button>
             </div>
@@ -313,6 +319,22 @@ export default function Cart() {
                     </button>
                   ))}
                 </div>
+
+                {healthFund && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="pt-2"
+                  >
+                    <input 
+                      type="text" 
+                      placeholder="Member ID / Policy Number"
+                      value={memberId}
+                      onChange={(e) => setMemberId(e.target.value)}
+                      className="w-full p-4 bg-emerald-50/50 rounded-2xl border border-emerald-500/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 text-emerald-900 placeholder:text-emerald-900/30 font-bold"
+                    />
+                  </motion.div>
+                )}
               </div>
 
               <button 
@@ -553,6 +575,77 @@ export default function Cart() {
                 <span className="text-charcoal font-bold">Level 1/76 Pier St, Altona</span>
               </div>
             </div>
+
+            {/* Email Resend Section */}
+            <div className="w-full max-w-sm space-y-4">
+              <p className="text-xs text-accent/60 italic">
+                {t("Didn't receive your confirmation? Enter email to send again:", "ไม่ได้รับอีเมลยืนยัน? กรอกอีเมลเพื่อให้ระบบส่งให้อีกครั้งนะคะ")}
+              </p>
+              <div className="flex gap-2">
+                <input 
+                  type="email" 
+                  placeholder="yourname@example.com"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  className="flex-1 bg-white border border-primary/10 rounded-2xl px-4 py-3 text-charcoal text-sm focus:outline-none focus:border-primary/50 transition-colors shadow-sm"
+                />
+                <button 
+                  onClick={() => {
+                    if (resendEmail) {
+                      setResendSuccess(true);
+                      setTimeout(() => setResendSuccess(false), 5000);
+                    }
+                  }}
+                  className="bg-navy text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-navy/90 transition-all shadow-md border border-white/10"
+                >
+                  {t('Send Again', 'ส่งอีกครั้ง')}
+                </button>
+              </div>
+              <AnimatePresence>
+                {resendSuccess && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl"
+                  >
+                    <p className="text-emerald-600 text-[10px] font-bold">
+                      {t('Confirmation email has been resent to your inbox!', 'ระบบได้ส่งอีเมลยืนยันไปยังกล่องข้อความของคุณแล้วค่ะ!')}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Step 5: Partner Privilege Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="w-full max-w-sm bg-gradient-to-br from-indigo-900 to-navy p-8 rounded-[3rem] text-left border border-white/10 shadow-2xl space-y-6 relative overflow-hidden"
+            >
+               <div className="absolute top-0 right-0 p-8 opacity-10">
+                 <Sparkles size={100} className="text-gold" />
+               </div>
+               <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-gold border border-white/10">
+                    <Heart size={28} fill="currentColor" />
+                  </div>
+                  <div>
+                    <h4 className="text-gold font-serif font-black text-lg italic">{t('Feel like a massage?', 'Feeling tired?')}</h4>
+                    <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em]">{t('Partner Privilege', 'Partner Privilege')}</p>
+                  </div>
+               </div>
+               <p className="text-white/80 text-xs leading-relaxed font-medium relative z-10">
+                 {t('สบายใจแล้ว มาสบายตัวต่อมั้ยคะ? รับส่วนลด 15% สำหรับ Thai Massage ที่ Chapter99 (ห่างไปแค่ 5 นาที)', 'Feeling tired after your treatment? Get 15% off Thai Massage at Chapter99 (5 mins away).')}
+               </p>
+               <button 
+                 onClick={() => window.open('https://massage.chapter99.solutions', '_blank')}
+                 className="w-full py-4 bg-white text-navy rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gold transition-all relative z-10"
+               >
+                 {t('รับสิทธิ์เลย 🍊', 'Claim Voucher')}
+               </button>
+            </motion.div>
 
             <button 
               onClick={() => window.location.href = '/'}

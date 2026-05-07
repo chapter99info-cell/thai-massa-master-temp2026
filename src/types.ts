@@ -55,6 +55,8 @@ export interface StaffStatus {
   currentPrice?: number;
   currentBedNumber?: string;
   currentBedType?: 'Foot' | 'Body' | 'VIP';
+  healthFund?: string | null;
+  memberId?: string | null;
   providerNumber?: string;
   insuranceExpiry?: string;
   insuranceClaimAmount?: number;
@@ -108,6 +110,55 @@ export interface AlertEntry {
   status: 'NEW' | 'READ';
 }
 
+export interface Booking {
+  id: string;
+  customerName: string;
+  serviceName: string;
+  serviceEnglishName?: string;
+  therapistName: string;
+  therapistId: string;
+  price: number;
+  durationMins: number;
+  timeSlot: string;
+  date: string;
+  healthFund?: string | null;
+  memberId?: string | null;
+  paymentMethod: 'clinic' | 'online';
+  bedId?: string;
+  status: 'Reserved' | 'In Use' | 'Completed' | 'Cancelled';
+  timestamp: string;
+  createdBy?: string; // Role or PIN ID
+  closedBy?: string;
+}
+
+export interface Sale {
+  id: string;
+  timestamp: string;
+  customer: string;
+  service: string;
+  therapist: string;
+  amount: number;
+  method: 'Cash' | 'Card' | 'PayID' | 'HICAPS';
+  createdBy: string;
+  closedBy: string;
+}
+
+export interface SecurityEvent {
+  id: string;
+  timestamp: string;
+  role: string;
+  eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT' | 'FINANCIAL_EDIT_DENIED';
+  details: string;
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  performer: string; // PIN Role/ID
+  action: string;
+  details: string;
+}
+
 export interface AppSettings {
   clientName: string;
   storeId: string;
@@ -135,6 +186,8 @@ export interface AppSettings {
   heroVideoUrl?: string;
   heroImageUrl?: string;
   shopDescription?: string;
+  isUpgraded?: boolean;
+  toneOfVoice?: string;
 }
 
 export interface Customer {
@@ -163,4 +216,24 @@ export interface GiftVoucher {
   expiryDate: string;
   isRedeemed: boolean;
   type: 'E-VOUCHER' | 'PHYSICAL';
+}
+
+export interface Expense {
+  id: string;
+  timestamp: string;
+  category: 'Rent' | 'Utilities' | 'Supplies' | 'Marketing' | 'Staff' | 'Other';
+  description: string;
+  amount: number;
+  recordedBy: string;
+  receiptUrl?: string;
+  isTaxDeductible: boolean;
+}
+
+export interface ProfitLossSummary {
+  revenue: number;
+  expenses: number;
+  grossProfit: number;
+  estimatedTax: number;
+  netProfit: number;
+  period: string;
 }

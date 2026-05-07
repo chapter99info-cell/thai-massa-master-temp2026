@@ -65,6 +65,18 @@ export default function PrintableReceipt({ session, paymentMethod, hicapsData, d
           <span>Client:</span>
           <span className="font-bold">{session.currentCustomer || 'Guest'}</span>
         </div>
+        {session.healthFund && (
+          <div className="flex justify-between">
+            <span>Health Fund:</span>
+            <span>{session.healthFund}</span>
+          </div>
+        )}
+        {session.memberId && (
+          <div className="flex justify-between">
+            <span>Member ID:</span>
+            <span>{session.memberId}</span>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-dashed border-black my-2 pt-1">

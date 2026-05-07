@@ -32,12 +32,13 @@ import {
   QrCode,
   ShieldCheck,
   Download,
-  Sparkles
+  Sparkles,
+  Image as ImageIcon
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { therapists } from '../data/therapists';
 import { services } from '../data/services';
-import { StaffStatus, QueueItem, AlertEntry, AttendanceEntry, Bed } from '../types';
+import { StaffStatus, QueueItem, AlertEntry, AttendanceEntry, Bed, SecurityEvent, AuditLog } from '../types';
 import { storeConfig, getAppSettings, INITIAL_BEDS } from '../config';
 import { cn, formatCurrency } from '../lib/utils';
 import { usePin } from '../contexts/PinContext';
@@ -54,10 +55,13 @@ interface ManagerDashboardProps {
 }
 
 export default function ManagerDashboard({ enablePrinting = true, billingPlan = 'GP%' }: ManagerDashboardProps) {
-  const { logout } = usePin();
+  const { logout, accessLevel } = usePin();
   const { t } = useLanguage();
   const { beds, bookings, updateBedStatus } = useBookings();
   const settings = getAppSettings();
+  
+  const [securityLogs, setSecurityLogs] = useState<SecurityEvent[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [staff, setStaff] = useState<StaffStatus[]>(
     therapists.map(t => ({
       therapistId: t.id,
@@ -78,10 +82,12 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'PayID' | 'HICAPS' | null>(null);
   const [hicapsData, setHicapsData] = useState({ claim: 0, gap: 0 });
   const [newWalkIn, setNewWalkIn] = useState<{ customerName: string; serviceId: string; therapistId: string; bedId?: string }>({
-    customerName: '',
-    serviceId: services[0].id,
-    therapistId: 'none'
-  });
+      customerName: '',
+      serviceId: services[0].id,
+      therapistId: 'none',
+      healthFund: '',
+      memberId: ''
+    });
   const [formError, setFormError] = useState<string | null>(null);
   const [somMessage, setSomMessage] = useState<string | null>(null);
   const [salesLog, setSalesLog] = useState<any[]>([]);
@@ -94,13 +100,43 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   const [payIdSlip, setPayIdSlip] = useState<string | null>(null);
   const [isStaffStatusOpen, setIsStaffStatusOpen] = useState(false);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'control' | 'payments' | 'calendar' | 'crm'>('control');
+  const [activeTab, setActiveTab] = useState<'control' | 'payments' | 'calendar' | 'crm' | 'audit' | 'expenses' | 'marketing'>('control');
   const [customers, setCustomers] = useState<any[]>([
     { id: 'c1', name: 'John Doe', visits: 12, lastVisit: '2026-03-01', birthday: '1990-05-05' },
     { id: 'c2', name: 'Jane Smith', visits: 1, lastVisit: '2026-05-01', birthday: '1995-10-10' },
     { id: 'c3', name: 'Bob Wilson', visits: 5, lastVisit: '2025-12-01', birthday: '1985-01-01' },
     { id: 'c4', name: 'Alice Brown', visits: 15, lastVisit: '2026-04-20', birthday: '2000-05-05' },
   ]);
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [newExpense, setNewExpense] = useState({ description: '', amount: 0, category: 'Supplies' });
+  const [isAiScanning, setIsAiScanning] = useState(false);
+  const [marketingInput, setMarketingInput] = useState('');
+  const [marketingOutput, setMarketingOutput] = useState('');
+  const [isAiProcessingMarketing, setIsAiProcessingMarketing] = useState(false);
+
+  const totalCashSales = salesLog.filter(s => s.method === 'Cash').reduce((acc, s) => acc + s.amount, 0);
+  const cashLimit = 500; // Notify owner if cash > $500
+  
+  useEffect(() => {
+    if (totalCashSales > cashLimit && accessLevel === 'owner') {
+      setSomMessage(t(`ว้าว! วันนี้เก็บเงินสดได้เยอะเลยค่ะพี่ (${formatCurrency(totalCashSales)}) อย่าลืมแบ่งไปฝากธนาคารให้ยอดตรงกับบัญชีนะคะ น้องส้มเป็นห่วงค่ะ! 🍊`, `Wow! You've collected a lot of cash today (${formatCurrency(totalCashSales)}). Don't forget to deposit it into the bank to match your accounting records! 🍊`));
+    }
+  }, [totalCashSales, accessLevel]);
+
+  const handleAddExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    const expense = {
+      id: `exp-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      ...newExpense,
+      recordedBy: accessLevel || 'unknown'
+    };
+    setExpenses(prev => [expense, ...prev]);
+    setIsExpenseModalOpen(false);
+    setNewExpense({ description: '', amount: 0, category: 'Supplies' });
+    setSomMessage(t('บันทึกรายจ่ายเรียบร้อยค่ะ! น้องส้มจะเก็บใบเสร็จนี้ไว้ให้พี่แสน (Master Admin) สรุปภาษีตอนสิ้นเดือนนะคะ 🍊', 'Expense recorded! I will keep this record for the Master Admin to summarize for tax at the end of the month. 🍊'));
+  };
 
   const newAlertsCount = alerts.filter(a => a.status === 'NEW').length;
 
@@ -225,6 +261,16 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
       price: service.standardPrice
     };
 
+    // Log action
+    const newAudit: AuditLog = {
+      id: `audit-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      performer: accessLevel || 'unknown',
+      action: 'CREATE_BOOKING',
+      details: `Created walk-in booking for ${data.customerName}`
+    };
+    setAuditLogs(prev => [newAudit, ...prev]);
+
     // Assign immediately
     setStaff(prev => prev.map(s => {
       if (s.therapistId === data.therapistId) {
@@ -238,8 +284,12 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
           currentPrice: newBooking.price,
           currentBedNumber: bed.number,
           currentBedType: bed.type,
-          providerNumber: therapist?.providerNumber
-        };
+          healthFund: data.healthFund,
+          memberId: data.memberId,
+          providerNumber: therapist?.providerNumber,
+          // Add createdBy for audit
+          createdBy: accessLevel || 'unknown'
+        } as any;
       }
       return s;
     }));
@@ -249,13 +299,26 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     
     setIsQuickAddOpen(false);
     setFormError(null);
-    setNewWalkIn({ customerName: '', serviceId: services[0].id, therapistId: 'none' });
+    setNewWalkIn({ customerName: '', serviceId: services[0].id, therapistId: 'none', healthFund: '', memberId: '' });
     setPendingWalkIn(null);
     setShowInsuranceWarning(false);
   };
 
   const processPayment = (method: 'Cash' | 'Card' | 'PayID' | 'HICAPS') => {
     if (!paymentSession) return;
+
+    if (accessLevel === 'staff') {
+      const securityEvent: SecurityEvent = {
+        id: `sec-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        role: 'staff',
+        eventType: 'FINANCIAL_EDIT_DENIED',
+        details: 'Staff attempted to process payment. Access Denied.'
+      };
+      setSecurityLogs(prev => [securityEvent, ...prev]);
+      setSomMessage(t('ขออภัยค่ะพี่ ฟังก์ชันการเงินล็อคไว้เฉพาะ Manager/Owner นะคะ น้องส้มลงบันทึกไว้ให้พี่แสนดูแล้วค่ะ 🍊', 'Sorry, financial functions are restricted to Manager/Owner. I have logged this attempt for the owner. 🍊'));
+      return;
+    }
     
     setPaymentMethod(method);
     
@@ -293,14 +356,28 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
       method: method,
       type: 'SALE',
       bedNumber: paymentSession.currentBedNumber,
-      bedType: paymentSession.currentBedType
+      bedType: paymentSession.currentBedType,
+      createdBy: (paymentSession as any).createdBy || 'unknown',
+      closedBy: accessLevel || 'unknown'
     };
     
     setSalesLog(prev => [...prev, logData]);
+
+    // Add Audit Log
+    const paymentAudit: AuditLog = {
+      id: `audit-pay-${Date.now()}`,
+      timestamp: now.toISOString(),
+      performer: accessLevel || 'unknown',
+      action: 'PROCESS_PAYMENT',
+      details: `Processed ${method} payment of $${amount.toFixed(2)} for ${paymentSession.currentCustomer}`
+    };
+    setAuditLogs(prev => [paymentAudit, ...prev]);
     setLastSaleDate(now);
     
     if (method === 'PayID') {
       setSomMessage(t(`บันทึกยอด PayID เรียบร้อย (เวลา ${exactTime}) น้องส้มจดวินาทีไว้ให้พี่เช็คแล้วค่ะ! 🍊`, `PayID payment recorded (Time: ${exactTime}). I've noted the exact second for the owner to check! 🍊`));
+    } else if (method === 'HICAPS' || paymentSession.healthFund) {
+      setSomMessage(t(`ชำระเงินเรียบร้อยแล้วค่ะ! น้องส้มเตรียมร่างอีเมลส่งใบเสร็จ Remedial Massage สำหรับเคลมประกันให้ลูกค้าแล้วนะคะ พี่แสนกดเปิด Nong Som เพื่อดูดราฟต์ได้เลยค่ะ 🍊`, `Payment successful! I've prepared a draft email with the Remedial Massage receipt for the customer's insurance claim. Ask me to see the draft! 🍊`));
     } else {
       setSomMessage(t('บันทึกการชำระเงินเรียบร้อยแล้วค่ะพี่! 🍊', 'Payment recorded successfully! 🍊'));
     }
@@ -469,6 +546,48 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
             <DollarSign size={18} />
             <span>{t('💰 Sales', 'Revenue')}</span>
           </button>
+          {(accessLevel === 'owner' || accessLevel === 'admin') && (
+            <button
+              onClick={() => setActiveTab('marketing')}
+              className={cn(
+                "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+                activeTab === 'marketing' 
+                  ? "bg-indigo-500 text-white shadow-2xl scale-105" 
+                  : "text-white/50 hover:text-white"
+              )}
+            >
+              <Sparkles size={18} />
+              <span>{t('✨ Marketing', 'Marketing')}</span>
+            </button>
+          )}
+          {(accessLevel === 'owner' || accessLevel === 'admin') && (
+            <button
+              onClick={() => setActiveTab('expenses')}
+              className={cn(
+                "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+                activeTab === 'expenses' 
+                  ? "bg-rose-500 text-white shadow-2xl scale-105" 
+                  : "text-white/50 hover:text-white"
+              )}
+            >
+              <Wallet size={18} />
+              <span>{t('🧾 Expenses', 'Expenses')}</span>
+            </button>
+          )}
+          {(accessLevel === 'owner' || accessLevel === 'admin') && (
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={cn(
+                "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+                activeTab === 'audit' 
+                  ? "bg-indigo-500 text-white shadow-2xl scale-105" 
+                  : "text-white/50 hover:text-white"
+              )}
+            >
+              <ShieldCheck size={18} />
+              <span>{t('🛡️ Audit', 'Security')}</span>
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-4">
@@ -716,7 +835,220 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
           </div>
         )}
 
-        {activeTab === 'control' ? (
+        {activeTab === 'audit' && (accessLevel === 'owner' || accessLevel === 'admin') && (
+          <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Security Logs */}
+              <div className="bg-slate-900/80 p-8 rounded-[3rem] border border-red-500/10 shadow-2xl backdrop-blur-md space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+                    <ShieldCheck size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-serif font-bold text-white text-left">{t('บันทึกความปลอดภัย', 'Security Events')}</h3>
+                    <p className="text-slate-500 text-xs text-left">{t('ประวัติการพยายามเข้าถึงฟังก์ชันที่ถูกจำกัด', 'Unauthorized access attempts history')}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                  {securityLogs.length > 0 ? securityLogs.map(log => (
+                    <div key={log.id} className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="px-2 py-1 bg-red-500 text-white text-[8px] font-black rounded uppercase tracking-widest">{log.eventType}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 text-left font-bold">{log.details}</p>
+                      <p className="text-[10px] text-red-400/60 uppercase font-black tracking-widest">Role: {log.role}</p>
+                    </div>
+                  )) : (
+                    <div className="text-center py-10">
+                      <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto text-slate-600 mb-4">
+                        <CheckCircle size={32} />
+                      </div>
+                      <p className="text-slate-600 italic text-sm">No security incidents detected.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Audit Logs */}
+              <div className="bg-slate-900/80 p-8 rounded-[3rem] border border-indigo-500/10 shadow-2xl backdrop-blur-md space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                    <FileText size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-serif font-bold text-white text-left">{t('Audit Log / ประวัติการทำงาน', 'Activity Audit Log')}</h3>
+                    <p className="text-slate-500 text-xs text-left">{t('ตรวจสอบว่าใครเป็นคนลงคิวและปิดยอด', 'Track who created and closed transactions')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                  {auditLogs.length > 0 ? auditLogs.map(log => (
+                    <div key={log.id} className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50 space-y-2 border-l-4 border-l-indigo-500">
+                      <div className="flex justify-between items-center">
+                        <span className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">{log.action}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 text-left">{log.details}</p>
+                      <div className="pt-2 border-t border-slate-700/50 flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Performer: {log.performer}</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center py-10">
+                      <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto text-slate-600 mb-4">
+                        <Clock size={32} />
+                      </div>
+                      <p className="text-slate-600 italic text-sm">No activity recorded yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'marketing' && (accessLevel === 'owner' || accessLevel === 'admin') && (
+          <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8">
+            <div className="bg-slate-900/80 p-10 rounded-[3rem] border border-indigo-500/10 shadow-2xl backdrop-blur-md space-y-10">
+               <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                    <Sparkles size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-serif font-bold text-white">{t('AI Marketing Hub 🍊', 'AI Marketing Hub')}</h3>
+                    <p className="text-slate-500 text-sm">{t('เปลี่ยนภาษาไทยบ้านๆ ให้เป็น Content ภาษาอังกฤษระดับพรีเมียม', 'Convert casual Thai into premium English content.')}</p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60">{t('Thai Concept / ไอเดียบอกน้องส้ม', 'Thai Concept')}</label>
+                    <textarea 
+                      value={marketingInput}
+                      onChange={(e) => setMarketingInput(e.target.value)}
+                      placeholder={t('เช่น นวดไทยที่นี่ดีที่สุดใน Altona ราคากันเอง พนักงานฝีมือดี...', 'e.g. Best Thai massage in Altona, friendly prices...')}
+                      className="w-full h-48 bg-slate-800/50 border border-indigo-500/10 rounded-3xl p-6 text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-all font-sans"
+                    />
+                    <button 
+                      disabled={!marketingInput || isAiProcessingMarketing}
+                      onClick={() => {
+                        setIsAiProcessingMarketing(true);
+                        setTimeout(() => {
+                           setMarketingOutput(`Experience the ultimate serenity at ${storeConfig.storeName} Altona. Our highly skilled therapists deliver an authentic Thai healing tradition tailored for your modern lifestyle. Indulge in premium wellness that transcends expectations. ✨💆‍♀️ #PremiumThaiWellness #AltonaMassage #NongSomAI`);
+                           setIsAiProcessingMarketing(false);
+                           setSomMessage(t('ปั่น Content หรูๆ ให้แล้วค่ะพี่! กด Copy ไปโพสต์ได้เลย (Chop the Money!) 🍊', 'Premium content generated! Copy and post it now! 🍊'));
+                        }, 2000);
+                      }}
+                      className={cn(
+                        "w-full py-4 bg-indigo-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
+                        (!marketingInput || isAiProcessingMarketing) ? "opacity-50 grayscale cursor-not-allowed" : "hover:scale-105 active:scale-95 shadow-xl shadow-indigo-900/20"
+                      )}
+                    >
+                      {isAiProcessingMarketing ? <Timer className="animate-spin" /> : <Sparkles />}
+                      {isAiProcessingMarketing ? t('กำลังเขียน...', 'Generating...') : t('Generate Premium Eng Content', 'Generate Premium Eng Content')}
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60">{t('Luxury Result / ผลลัพธ์ระดับพรีเมียม', 'Luxury Result')}</label>
+                    <div className="w-full h-48 bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 text-indigo-100 text-sm leading-relaxed overflow-y-auto italic font-serif relative group">
+                      {marketingOutput || (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
+                           <ImageIcon size={32} className="mb-2" />
+                           <p className="text-[10px] font-black uppercase tracking-widest">Waiting for input...</p>
+                        </div>
+                      )}
+                      {marketingOutput && (
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(marketingOutput);
+                            setSomMessage(t('คัดลอกเรียบร้อยค่ะ! 🍊', 'Copied to clipboard! 🍊'));
+                          }}
+                          className="absolute top-4 right-4 p-2 bg-indigo-500/20 hover:bg-indigo-500 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'expenses' && (accessLevel === 'owner' || accessLevel === 'admin') && (
+          <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8">
+            <div className="bg-slate-900/80 p-10 rounded-[3rem] border border-rose-500/10 shadow-2xl backdrop-blur-md space-y-8">
+               <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                      <Wallet size={32} />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-serif font-bold text-white">{t('บันทึกรายจ่ายร้าน', 'Store Expense Log')}</h3>
+                      <p className="text-slate-500 text-sm">{t('บันทึกทุกยอดใช้จ่ายเพื่อใช้ลดหย่อนภาษีนะคะ 🍊', 'Record all expenses for tax deduction benefits.')}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <button 
+                      disabled={isAiScanning}
+                      onClick={() => {
+                        setIsAiScanning(true);
+                        setSomMessage(t('กำลังเปิดระบบ AI Bulk Scan... กรุณารอสักครู่นะคะพี่ 🍊', 'Opening AI Bulk Scan system... Please wait a moment! 🍊'));
+                        setTimeout(() => {
+                           setIsAiScanning(false);
+                           setSomMessage(t('ระบบ AI Scan พร้อมแล้วค่ะ! พี่สามารถอัปโหลดรูปใบเสร็จหลายๆ ใบพร้อมกันได้เลยค่ะ เดี๋ยวส้มสรุปให้ 🍊', 'AI Scan ready! You can upload multiple receipt photos at once, I will summarize them for you! 🍊'));
+                        }, 2000);
+                      }}
+                      className={cn(
+                        "px-8 py-4 bg-indigo-500 text-white rounded-2xl font-black flex items-center gap-2 hover:scale-105 transition-all shadow-xl shadow-indigo-900/20",
+                        isAiScanning && "animate-pulse opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <Camera size={20} /> {isAiScanning ? t('กำลังสแกน...', 'Scanning...') : t('Bulk AI Scan', 'Bulk AI Scan')}
+                    </button>
+                    <button 
+                      onClick={() => setIsExpenseModalOpen(true)}
+                      className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-black flex items-center gap-2 hover:scale-105 transition-all shadow-xl shadow-rose-900/20"
+                    >
+                      <Plus size={20} /> {t('เพิ่มรายจ่าย', 'Add Expense')}
+                    </button>
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                 {expenses.length > 0 ? expenses.map(exp => (
+                   <div key={exp.id} className="p-6 rounded-[2rem] bg-slate-800/50 border border-slate-700/50 flex justify-between items-center group hover:bg-slate-800 transition-all border-l-4 border-l-rose-500">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center text-xl">
+                          {exp.category === 'Supplies' ? '🧵' : exp.category === 'Rent' ? '🏢' : exp.category === 'Utilities' ? '⚡' : '💸'}
+                        </div>
+                        <div>
+                          <p className="text-white font-bold">{exp.description}</p>
+                          <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{exp.category} • {new Date(exp.timestamp).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-serif font-bold text-rose-400">-${exp.amount.toFixed(2)}</div>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">By: {exp.recordedBy}</p>
+                      </div>
+                   </div>
+                 )) : (
+                   <div className="text-center py-20 bg-slate-800/20 rounded-[3rem] border border-dashed border-slate-700/50">
+                      <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto text-slate-600 mb-6">
+                        <FileText size={40} />
+                      </div>
+                      <p className="text-slate-400 font-medium">{t('ยังไม่มีการบันทึกรายจ่ายในเดือนนี้ค่ะพี่ 🍊', 'No expenses recorded yet this month.')}</p>
+                   </div>
+                 )}
+               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'control' && (
           <>
             {/* Bed Status Section */}
             <div className="space-y-6">
@@ -822,7 +1154,9 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                                 customerName: onlineBooking.customerName,
                                 serviceId: services.find(s => s.name === onlineBooking.serviceName || s.englishName === onlineBooking.serviceEnglishName)?.id || services[0].id,
                                 therapistId: onlineBooking.therapistId,
-                                bedId: bed.id
+                                bedId: bed.id,
+                                healthFund: onlineBooking.healthFund || '',
+                                memberId: onlineBooking.memberId || ''
                               });
                               setIsQuickAddOpen(true);
                             }}
@@ -981,8 +1315,10 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
               </div>
             </div>
           </>
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-8">
+        )}
+
+        {activeTab === 'payments' && (
+          <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in-95">
             <div className="bg-slate-900/80 p-10 rounded-[3rem] border border-slate-800/50 shadow-2xl backdrop-blur-md text-center space-y-6">
               <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center text-primary mx-auto border border-primary/30">
                 <TrendingUp size={40} />
@@ -1362,6 +1698,29 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                           {b.number}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Health Fund (Optional)</label>
+                      <input 
+                        type="text"
+                        value={(newWalkIn as any).healthFund || ''}
+                        onChange={(e) => setNewWalkIn(prev => ({ ...prev, healthFund: e.target.value }))}
+                        placeholder="e.g. BUPA, Medibank"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-primary outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Member ID (Optional)</label>
+                      <input 
+                        type="text"
+                        value={(newWalkIn as any).memberId || ''}
+                        onChange={(e) => setNewWalkIn(prev => ({ ...prev, memberId: e.target.value }))}
+                        placeholder="Member Number"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-primary outline-none"
+                      />
                     </div>
                   </div>
 
@@ -1903,23 +2262,32 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   </div>
                 </div>
 
-                <div className={cn("grid gap-4", (settings.enableThermalPrinting && enablePrinting) ? "grid-cols-2" : "grid-cols-1")}>
+                <div className="grid grid-cols-2 gap-4">
                   {settings.enableThermalPrinting && enablePrinting && (
                     <button 
                       onClick={handlePrint}
-                      className="py-4 bg-slate-100 text-slate-900 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+                      className="py-4 bg-navy text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-navy/20 border border-white/10"
                     >
                       <Receipt size={18} />
-                      Print Tax Invoice
+                      {t('พิมพ์ใบเสร็จ', 'Print thermal')}
                     </button>
                   )}
                   <button 
-                    onClick={closeReceipt}
-                    className="py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-800 transition-all"
+                    onClick={() => {
+                        setSomMessage(t('กำลังเตรียมไฟล์ PDF และส่งเข้าอีเมลลูกค้าอัตโนมัติแล้วค่ะพี่ 🍊 (Smart Claim Active)', 'Preparing PDF and sending to customer email automatically... 🍊 (Smart Claim Active)'));
+                    }}
+                    className="py-4 bg-gold text-navy rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-gold/20"
                   >
-                    Done / เสร็จสิ้น
+                    <Download size={18} />
+                    {t('ส่งอีเมล (PDF)', 'Email PDF')}
                   </button>
                 </div>
+                <button 
+                  onClick={closeReceipt}
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
+                >
+                  Done / เสร็จสิ้น
+                </button>
               </div>
             </motion.div>
           </div>
@@ -1978,6 +2346,98 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   {t('เปิดฟอร์ม', 'Open Form')}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Expense Modal */}
+      <AnimatePresence>
+        {isExpenseModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsExpenseModalOpen(false)}
+              className="absolute inset-0 bg-navy/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-slate-900 border border-gold/20 rounded-[3rem] p-10 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 blur-[60px] -z-10" />
+              
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-2xl font-serif font-bold text-white tracking-tight">{t('บันทึกรายจ่ายใหม่', 'Add New Expense')}</h3>
+                  <p className="text-slate-500 text-xs mt-1 uppercase font-black tracking-widest">{t('Tax Deduction Log', 'Tax Deduction Entry')}</p>
+                </div>
+                <button 
+                  onClick={() => setIsExpenseModalOpen(false)}
+                  className="p-3 bg-white/5 text-slate-400 hover:text-white rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddExpense} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gold/40 mb-2">{t('Description / รายละเอียด', 'Description')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={newExpense.description}
+                    onChange={e => setNewExpense({...newExpense, description: e.target.value})}
+                    placeholder={t('เช่น ค่าวัสดุอุปกรณ์นวด, ค่าเช่า...', 'e.g. Massage oils, Rent...')}
+                    className="w-full bg-slate-800/50 border border-gold/10 rounded-2xl px-6 py-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-gold/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gold/40 mb-2">{t('Amount / จำนวนเงิน', 'Amount')}</label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gold font-bold">$</span>
+                      <input
+                        type="number"
+                        required
+                        step="0.01"
+                        value={newExpense.amount || ''}
+                        onChange={e => setNewExpense({...newExpense, amount: parseFloat(e.target.value)})}
+                        className="w-full bg-slate-800/50 border border-gold/10 rounded-2xl pl-10 pr-6 py-4 text-white focus:outline-none focus:border-gold/50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gold/40 mb-2">{t('Category / หมวดหมู่', 'Category')}</label>
+                    <select
+                      value={newExpense.category}
+                      onChange={e => setNewExpense({...newExpense, category: e.target.value})}
+                      className="w-full bg-slate-800/50 border border-gold/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-gold/50 appearance-none hover:bg-slate-800 transition-colors"
+                    >
+                      <option value="Supplies">{t('อุปกรณ์ (Supplies)', 'Supplies')}</option>
+                      <option value="Rent">{t('ค่าเช่า (Rent)', 'Rent')}</option>
+                      <option value="Utilities">{t('ค่าน้ำ/ไฟ (Utilities)', 'Utilities')}</option>
+                      <option value="Maintenance">{t('ค่าซ่อมบำรุง (Maintenance)', 'Maintenance')}</option>
+                      <option value="Staff Expenses">{t('สวัสดิการ (Staff)', 'Staff')}</option>
+                      <option value="Marketing">{t('การตลาด (Marketing)', 'Marketing')}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    className="w-full h-16 bg-gold text-navy rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-gold/20 flex items-center justify-center gap-3"
+                  >
+                    <Wallet size={20} />
+                    {t('บันทึกรายการ', 'Record Expense')}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

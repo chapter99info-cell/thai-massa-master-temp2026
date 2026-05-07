@@ -50,11 +50,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   ownerPin: '9999',
   staffPin: '1111',
   managerPin: '4444',
-  masterPin: '7777',
+  masterPin: '3501',
   brandLogoUrl: '',
   heroVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-massage-therapist-working-on-a-client-4444-large.mp4',
   heroImageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=2070&auto=format&fit=crop',
   shopDescription: 'Experience True Serenity - Premium Wellness in Altona',
+  isUpgraded: false,
+  toneOfVoice: 'Warm, International, Professional, and Relaxing',
 };
 
 export const getAppSettings = (): AppSettings => {

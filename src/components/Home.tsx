@@ -126,7 +126,7 @@ export default function Home() {
         defaultGenderFilter={genderPreference}
       />
       {/* Hero Section */}
-      <section className="relative h-[95vh] flex flex-col items-center justify-center text-center overflow-hidden">
+      <section className="relative h-[95vh] hero-section flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Full-width Hero Image or Video */}
         <div className="absolute inset-0 z-0">
           <video 
@@ -161,7 +161,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* Circular BOOK NOW Button (Reference Style) */}
+          {/* Circular BOOK NOW Button (Redesigned for Premium Theme) */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -170,14 +170,23 @@ export default function Home() {
           >
             <Link 
               to="/book"
-              className="group relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-[#1e4620]/90 border-[6px] border-[#d4af37]/30 flex flex-col items-center justify-center text-white shadow-[0_0_60px_rgba(30,70,32,0.6)] hover:scale-105 hover:bg-[#2a5d2c] transition-all duration-500 overflow-hidden"
+              className="group relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-navy/80 backdrop-blur-md border-[8px] border-gold/20 flex flex-col items-center justify-center text-white shadow-[0_0_80px_rgba(212,175,55,0.3)] hover:scale-105 hover:bg-navy transition-all duration-700 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent" />
-              <span className="relative z-10 text-3xl md:text-4xl font-serif font-black tracking-tighter leading-none italic uppercase">
-                Book <br /> Now
+              <div className="absolute inset-0 bg-gradient-to-tr from-gold/10 to-transparent" />
+              
+              {/* Outer Pulsing Glow */}
+              <div className="absolute inset-0 rounded-full border-2 border-gold/40 animate-ping opacity-20 pointer-events-none" />
+              <div className="absolute inset-4 rounded-full border border-gold/10 animate-pulse pointer-events-none" />
+
+              <span className="relative z-10 text-4xl md:text-5xl font-serif font-black tracking-tighter leading-tight italic uppercase text-gold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                Book <br /> <span className="text-white text-3xl md:text-4xl">Now</span>
               </span>
-              {/* Inner Glow Effect */}
-              <div className="absolute inset-0 rounded-full border border-white/10 shadow-inner" />
+
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(212,175,55,0.1),transparent)]" />
+              
+              {/* Shine effect on hover */}
+              <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] transition-all duration-1000 group-hover:left-[150%]" />
             </Link>
           </motion.div>
 
@@ -214,8 +223,8 @@ export default function Home() {
       </section>
 
       {/* Featured Experiences Highlight Grid */}
-      <section className="max-w-7xl mx-auto px-6 -mt-32 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="container -mt-32 relative z-20 no-print">
+        <div className="featured-grid">
           {[
             {
               id: '1',
@@ -278,19 +287,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Experiences (Original Section - filtered to only show others or we can hide it for now to avoid redundancy) */}
+      {/* Featured Experiences (Original Section) */}
       {storeConfig.packageTier >= 2 && featuredServices.length > 0 && (
-        <section className="max-w-7xl mx-auto px-6 space-y-8">
+        <section className="container space-y-8 no-print">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className="text-3xl font-serif font-bold text-forest flex items-center gap-3">
+              <h3 className="text-3xl font-serif font-bold text-navy flex items-center gap-3">
                 <Sparkles className="text-accent" size={28} />
                 ✨ Featured Experiences
               </h3>
-              <p className="text-forest/40 text-sm font-medium uppercase tracking-widest">Tailored specifically for your wellbeing</p>
+              <p className="text-navy/40 text-sm font-medium uppercase tracking-widest">Tailored specifically for your wellbeing</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="featured-grid">
             {featuredServices.map((service) => {
               const { price } = getCurrentPrice(service);
               return (
@@ -348,7 +357,7 @@ export default function Home() {
       )}
 
       {/* Search & Filter Section */}
-      <section className="max-w-7xl mx-auto px-6 relative z-20">
+      <section className="container relative z-20 no-print">
         <div className="bg-white/70 p-10 rounded-[4rem] shadow-2xl border border-white/40 space-y-8 backdrop-blur-2xl">
           <div className="relative group">
             <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-ocean/40 group-focus-within:text-ocean transition-colors" size={24} />
@@ -406,7 +415,7 @@ export default function Home() {
       </section>
 
       {/* All Treatments Grid */}
-      <section className="max-w-7xl mx-auto px-6 space-y-12 pb-32">
+      <section className="container space-y-12 pb-32 no-print">
         <div className="text-center md:text-left space-y-3">
           <h3 className="text-4xl md:text-5xl font-serif font-black text-navy italic tracking-tight">{t('ทรีทเมนท์ทั้งหมด', 'All Vitality Treatments')}</h3>
           <p className="text-ocean/50 text-[10px] font-black uppercase tracking-[0.5em]">{t('เลือกบริการที่เหมาะกับคุณ', 'Find Your Perfect Ocean Breeze Experience')}</p>
@@ -415,7 +424,7 @@ export default function Home() {
         {activeCategory === 'GIFTS' ? (
           <VoucherStore />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="featured-grid">
           {filteredServices.map((service) => {
             const { price } = getCurrentPrice(service);
             return (
@@ -479,7 +488,7 @@ export default function Home() {
       </section>
 
       {/* Health Fund & Insurance Section */}
-      <section className="max-w-7xl mx-auto px-6 py-10">
+      <section className="container py-10 no-print">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}

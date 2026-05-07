@@ -28,6 +28,123 @@ body {
   @apply text-slate-800 font-sans;
 }
 
+/* 1. คุมขนาดรวม (Container Control) */
+.container {
+  width: 100%;
+  max-width: 1280px; /* ไม่ให้กว้างเกินไปบนจอคอม */
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* 2. การจัดเลย์เอาต์ตามขนาดหน้าจอแบบ Mobile-First (Default = Mobile) */
+
+/* Default: Mobile (< 768px) */
+.featured-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* แสดงแถวละ 1 ใบเท่านั้น */
+  gap: 15px;
+}
+.hero-section {
+  height: 300px;
+}
+.logo { width: 120px; } /* ปรับโลโก้ให้เล็กลงบนมือถือ */
+.booking-card { padding: 15px; } /* ลดช่องว่างภายในการ์ด */
+
+/* Adjust Nong Som / Chat Bubble for Mobile to not block CTAs */
+.chat-bubble-container {
+  bottom: 20px; /* Base position */
+  right: 20px;
+}
+
+.nong-som-wrapper {
+  position: fixed;
+  bottom: 96px; /* Matches bottom-24 */
+  right: 24px;  /* Matches right-6 */
+  z-index: 10000;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition: transform 0.1s ease-out;
+}
+
+.nong-som-wrapper:active {
+  cursor: grabbing;
+}
+
+/* Mobile-specific tweak: move it up slightly if needed, or ensure it's not too big */
+@media (max-width: 767px) {
+  .chat-bubble-container {
+    bottom: 80px; /* Move up to avoid standard bottom nav/CTAs */
+    scale: 0.85;
+  }
+}
+
+/* --- สำหรับ iPad และ Tablet (Portrait & Landscape: >= 768px) --- */
+@media (min-width: 768px) {
+  .featured-grid {
+    grid-template-columns: repeat(2, 1fr); /* แสดง 2 คอลัมน์พอกดง่ายๆ */
+    gap: 20px;
+  }
+  h1 { font-size: 2.5rem; }
+  .logo { width: 150px; }
+  .chat-bubble-container {
+    scale: 0.9;
+    bottom: 30px;
+  }
+}
+
+/* --- สำหรับคอมพิวเตอร์ (Desktop: >= 1024px) --- */
+@media (min-width: 1024px) {
+  .featured-grid {
+    grid-template-columns: repeat(3, 1fr); /* แสดง 3 คอลัมน์ */
+    gap: 30px;
+  }
+  .hero-section {
+    height: 600px; /* คุมความสูงพอดีๆ บนจอใหญ่ */
+  }
+  .chat-bubble-container {
+    scale: 1;
+    bottom: 40px;
+    right: 40px;
+  }
+}
+
+/* ป้องกันรูปภาพล้น (Global Reset) */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 4. Staff Portal Link Styling */
+.login-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  text-decoration: none;
+}
+
+/* หากต้องการใช้เทคนิค CSS Replacement สำหรับคำว่า Login เดิม */
+.login-link span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2E4D68; /* สีฟ้าพรีเมียม */
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.login-link:hover span {
+  color: #B8962E; /* สีทองธีมร้านเมื่อ Hover */
+}
+
+.login-link svg {
+  transition: transform 0.3s ease;
+}
+
+.login-link:hover svg {
+  transform: scale(1.2) rotate(-10deg);
+}
+
 h1, h2, h3, h4, .serif {
   @apply font-serif text-ocean;
 }

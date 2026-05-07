@@ -61,17 +61,19 @@ export default function Layout({ children }: LayoutProps) {
                 user ? (
                   <button 
                     onClick={logout}
-                    className="hover:text-ocean transition-colors"
+                    className="hover:text-ocean transition-colors flex items-center gap-2"
                   >
+                    <LogOut size={14} />
                     Logout
                   </button>
                 ) : (
-                  <button 
-                    onClick={login}
-                    className="hover:text-ocean transition-colors border-b-2 border-transparent hover:border-gold"
+                  <Link 
+                    to="/staff-dashboard"
+                    className="login-link hover:text-ocean transition-colors border-b-2 border-transparent hover:border-gold flex items-center gap-2"
                   >
-                    Login
-                  </button>
+                    <LockIcon size={14} className="text-gold" />
+                    <span>Staff Portal</span>
+                  </Link>
                 )
               )}
             </div>
