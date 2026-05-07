@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { Delete, LogIn, ShieldCheck, Lock as LockIcon } from 'lucide-react';
+import { Delete, LogIn, ShieldCheck, Lock as LockIcon, ArrowLeft } from 'lucide-react';
 import { usePin } from '../contexts/PinContext';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -149,10 +149,17 @@ export default function PinEntry() {
           })}
         </div>
 
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <p className="text-accent/20 text-[10px] uppercase tracking-widest font-bold">
             Authorized Personnel Only
           </p>
+          <button 
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 text-gold/40 hover:text-gold transition-all text-[11px] font-black uppercase tracking-[0.2em] group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+            {t('Back to Website', 'กลับสู่หน้าหลัก')}
+          </button>
         </div>
 
         {/* Resend Email Section */}
@@ -173,7 +180,7 @@ export default function PinEntry() {
               }}
               className="bg-navy text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-navy/80 transition-all border border-white/10"
             >
-              {t('Send Again', 'ส่งอีกครั้ง')}
+              {t('ส่งอีกครั้ง', 'Resend')}
             </button>
           </div>
           <AnimatePresence>

@@ -22,6 +22,7 @@ import { PinProvider, usePin } from './contexts/PinContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import SessionWarning from './components/SessionWarning';
 
 import { storeConfig, getAppSettings, saveAppSettings } from './config';
 import { googleSheetService } from './services/googleSheetService';
@@ -122,6 +123,7 @@ export default function App() {
                       </ProtectedRoute>
                     } />
                   </Routes>
+                  <SessionWarning />
                   <NongSom />
                 </Router>
               </CartProvider>

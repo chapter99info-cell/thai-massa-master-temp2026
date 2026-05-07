@@ -12,7 +12,7 @@ export const services: Service[] = [
     weekendPrice: 95,
     durationMins: 60,
     category: 'Thai Massage',
-    imageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_brveoqbrveoqbrve.png?alt=media&token=cb62e5f7-ea89-49aa-9be6-2ef92f0b7c2b',
     isFeatured: true
   },
   {
@@ -40,7 +40,7 @@ export const services: Service[] = [
     weekendPrice: 89,
     durationMins: 60,
     category: 'Remedial',
-    imageUrl: 'https://images.unsplash.com/photo-1596178065887-1138612f8f6b?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_kmstvqkmstvqkmst.png?alt=media&token=7b0e03cd-45d3-4f07-9498-d3ec4c13a14a',
     isFeatured: true
   },
   {
@@ -54,7 +54,7 @@ export const services: Service[] = [
     weekendPrice: 55,
     durationMins: 30,
     category: 'Foot Massage',
-    imageUrl: 'https://images.unsplash.com/photo-1519823551278-64ac9233dad1?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_uum2siuum2siuum2.png?alt=media&token=cc8a9ab3-56d5-409c-a14f-339aab95a98e',
     isFeatured: true
   },
   {
@@ -68,7 +68,7 @@ export const services: Service[] = [
     weekendPrice: 75,
     durationMins: 60,
     category: 'Foot Massage',
-    imageUrl: 'https://images.unsplash.com/photo-1519823551278-64ac9233dad1?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_uum2siuum2siuum2.png?alt=media&token=cc8a9ab3-56d5-409c-a14f-339aab95a98e',
     isFeatured: true
   },
   {
@@ -82,7 +82,7 @@ export const services: Service[] = [
     weekendPrice: 55,
     durationMins: 30,
     category: 'Thai Massage',
-    imageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_kmstvqkmstvqkmst.png?alt=media&token=7b0e03cd-45d3-4f07-9498-d3ec4c13a14a',
     isFeatured: true
   },
   {
@@ -96,7 +96,7 @@ export const services: Service[] = [
     weekendPrice: 75,
     durationMins: 60,
     category: 'Thai Massage',
-    imageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_kmstvqkmstvqkmst.png?alt=media&token=7b0e03cd-45d3-4f07-9498-d3ec4c13a14a',
     isFeatured: true
   },
   {
@@ -110,7 +110,7 @@ export const services: Service[] = [
     weekendPrice: 89,
     durationMins: 60,
     category: 'Deep Tissue',
-    imageUrl: 'https://images.unsplash.com/photo-1519824141121-997454a93f78?q=80&w=800&fit=crop',
+    imageUrl: 'https://firebasestorage.googleapis.com/v0/b/v4-massage-edition-2026.firebasestorage.app/o/Pictures%2FPrices%2FGemini_Generated_Image_brveoqbrveoqbrve.png?alt=media&token=cb62e5f7-ea89-49aa-9be6-2ef92f0b7c2b',
     isFeatured: true
   },
   {

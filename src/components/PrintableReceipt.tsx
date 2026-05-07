@@ -40,7 +40,8 @@ export default function PrintableReceipt({ session, bookingData, paymentMethod: 
       ? hicapsData.claim + hicapsData.gap 
       : (session?.currentPrice || 0));
   
-  const gst = amount / 11;
+  const gstRate = storeConfig.gstRate || 0.10; // Use config or default to 10%
+  const gst = amount * (gstRate / (1 + gstRate));
   const subtotal = amount - gst;
 
   const serviceTips = displayServiceId ? services.find(s => s.id === displayServiceId)?.postCareTips : null;
@@ -72,11 +73,14 @@ export default function PrintableReceipt({ session, bookingData, paymentMethod: 
       `}} />
       
       <div className="text-center border-b border-black pb-2 mb-2">
-        <h1 className="text-sm font-bold uppercase">{storeConfig.storeName}</h1>
-        <p>{storeConfig.address}</p>
-        <p>ABN: {storeConfig.abn}</p>
-        <p>Tel: {storeConfig.phone}</p>
-        <div className="mt-2 font-bold border-t border-black pt-1">TAX INVOICE</div>
+        <h1 className="text-sm font-bold uppercase tracking-widest">{storeConfig.storeName}</h1>
+        <p className="font-bold">TAX INVOICE / RECEIPT</p>
+        <p className="text-[8px] uppercase tracking-tighter">Receipt No: INV-{Math.floor(Math.random() * 89999 + 10000)}</p>
+        <div className="mt-1">
+          <p>{storeConfig.address}</p>
+          <p>ABN: {storeConfig.abn}</p>
+          <p>Tel: {storeConfig.phone}</p>
+        </div>
       </div>
 
       <div className="space-y-1">

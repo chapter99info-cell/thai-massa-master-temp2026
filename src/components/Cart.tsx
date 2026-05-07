@@ -598,7 +598,7 @@ export default function Cart() {
                   }}
                   className="bg-navy text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-navy/90 transition-all shadow-md border border-white/10"
                 >
-                  {t('Send Again', 'ส่งอีกครั้ง')}
+                  {t('ส่งอีกครั้ง', 'Resend')}
                 </button>
               </div>
               <AnimatePresence>

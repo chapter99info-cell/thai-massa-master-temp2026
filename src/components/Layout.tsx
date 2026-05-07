@@ -121,16 +121,22 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Column 3: Contact */}
           <div className="space-y-6">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gold">Contact Us</h4>
-            <a href={`tel:${storeConfig.phone}`} className="text-3xl font-serif font-black text-gold block hover:text-white transition-colors drop-shadow-sm">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gold text-center md:text-left">Contact Us</h4>
+            <a href={`tel:${storeConfig.phone}`} className="text-3xl font-serif font-black text-gold block hover:text-white transition-colors drop-shadow-sm text-center md:text-left">
               {storeConfig.phone}
             </a>
-            <Link 
-              to="/book"
-              className="w-full bg-gold text-navy py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center shadow-xl hover:scale-[1.02] transition-all active:scale-95"
+            <button 
+              onClick={() => {
+                if (location.pathname === '/' || location.pathname === '/book') {
+                  document.getElementById('services-menu')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  window.location.href = '/#services-menu';
+                }
+              }}
+              className="w-full bg-gold text-navy py-6 rounded-full font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center shadow-2xl hover:scale-[1.02] hover:bg-white transition-all active:scale-95 border-b-4 border-gold/40 active:border-b-0"
             >
               Book Reservation
-            </Link>
+            </button>
           </div>
         </div>
 

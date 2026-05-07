@@ -168,8 +168,8 @@ export default function Home() {
             transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
             className="relative mb-8"
           >
-            <Link 
-              to="/book"
+            <button 
+              onClick={() => document.getElementById('services-menu')?.scrollIntoView({ behavior: 'smooth' })}
               className="group relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-navy/80 backdrop-blur-md border-[8px] border-gold/20 flex flex-col items-center justify-center text-white shadow-[0_0_80px_rgba(212,175,55,0.3)] hover:scale-105 hover:bg-navy transition-all duration-700 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-tr from-gold/10 to-transparent" />
@@ -187,7 +187,7 @@ export default function Home() {
               
               {/* Shine effect on hover */}
               <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] transition-all duration-1000 group-hover:left-[150%]" />
-            </Link>
+            </button>
           </motion.div>
 
           {/* Subtitle from Reference */}
@@ -206,12 +206,12 @@ export default function Home() {
             transition={{ delay: 1.2 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-6"
           >
-            <Link 
-              to="/book"
+            <button 
+              onClick={() => document.getElementById('services-menu')?.scrollIntoView({ behavior: 'smooth' })}
               className="w-full sm:w-auto bg-gold text-navy px-12 py-5 rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(212,175,55,0.4)] hover:scale-105 hover:bg-white transition-all active:scale-95"
             >
               Online Booking
-            </Link>
+            </button>
             <a 
               href={`tel:${storeConfig.phone}`}
               className="w-full sm:w-auto bg-white/10 backdrop-blur-xl text-white px-12 py-5 rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] border-2 border-white/40 hover:bg-white hover:text-navy transition-all active:scale-95 shadow-2xl"
@@ -399,7 +399,7 @@ export default function Home() {
       </section>
 
       {/* All Treatments Price List Table (Luxury Master Template) */}
-      <section className="container space-y-16 pb-32 no-print max-w-6xl mx-auto">
+      <section id="services-menu" className="container space-y-16 pb-32 no-print max-w-6xl mx-auto">
         <div className="text-center space-y-6">
           <div className="w-24 h-1.5 bg-gold mx-auto rounded-full"></div>
           <h3 className="text-5xl md:text-7xl font-serif font-black text-navy italic tracking-tight leading-tight">

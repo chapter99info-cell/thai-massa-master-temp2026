@@ -9,17 +9,19 @@ export interface StoreConfig {
   address: string;
   phone: string;
   packageTier: 1 | 2 | 3; // 1=Basic, 2=Pro, 3=Premium
+  gstRate: number;
 }
 
 export const storeConfig: StoreConfig = {
   storeName: 'Premium Thai Wellness',
-  primaryColor: '#0EA5E9',
-  accentColor: '#D4AF37',
-  backgroundColor: '#F8FAFC',
-  abn: '12 345 678 901',
+  primaryColor: '#B8962E', // Professional Gold
+  accentColor: '#E2C374', // Soft Gold
+  backgroundColor: '#0F172A', // Deep Navy
+  abn: '12 345 678 910', // Updated from SOP/Prompt
   address: 'Level 1/76 Pier Street, Altona 3018',
   phone: '0466 992 456',
   packageTier: 3, // Full access for development
+  gstRate: 0.10, // 10% GST default
 };
 
 export const INITIAL_BEDS: Bed[] = [

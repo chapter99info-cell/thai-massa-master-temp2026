@@ -30,7 +30,10 @@ import {
   QrCode,
   Shield,
   Lock,
-  Download
+  Download,
+  Share2,
+  Copy,
+  Sparkles
 } from 'lucide-react';
 import { therapists } from '../data/therapists';
 import { services } from '../data/services';
@@ -45,8 +48,42 @@ import { useBookings } from '../contexts/BookingContext';
 export default function OwnerDashboard() {
   const { logout } = usePin();
   const { t } = useLanguage();
-  const { beds, bookings, updateBedStatus } = useBookings();
+  const { beds, bookings, updateBedStatus, addBed, removeBed } = useBookings();
   const settings = getAppSettings();
+  
+  const [isSocialGenOpen, setIsSocialGenOpen] = useState(false);
+  const [promoTitle, setPromoTitle] = useState('');
+  const [generatedPost, setGeneratedPost] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generateSocialPost = async () => {
+    if (!promoTitle.trim()) {
+      setMiraMessage(t('กรุณาใส่หัวข้อโปรโมชั่นก่อนนะคะ เดี๋ยวหนูเขียนให้ไม่ถูกค่ะ 🍊', 'Please enter a promotion topic first! 🍊'));
+      return;
+    }
+    
+    setIsGenerating(true);
+    // Simulate AI Professional analysis for AU/NZ Market
+    setTimeout(() => {
+      const styles = {
+        specialist: `🔬 STYLE A: THE WELLNESS SPECIALIST (AU/NZ Focus)\n\n"Say goodbye to persistent neck and shoulder tension. At ${storeConfig.storeName}, our practitioners specialise in Remedial techniques that target the root causes of office-related strain and muscular fatigue.\n\nOur current focus: '${promoTitle}'\n\nExperience evidence-based Thai healing that restores your range of motion. Book your recovery session today.\"\n\n📸 RECOMMENDATION: Use a high-quality video or photo showing deep tissue focus. Text overlay: 'Relieve. Restore. Recover.'\n\n📍 ${storeConfig.address}\n📞 ${storeConfig.phone}\n#RemedialMassage #SydneyWellness #AucklandSpa #HealthFundClaims`,
+        
+        luxury: `✨ STYLE B: LUXURY & RELAXATION\n\n"Escape the city hustle and immerse yourself in a sanctuary of silence. ${storeConfig.storeName} invites you to a journey of pure tranquility, where ancient Thai wisdom meets premium comfort.\n\nIntroducing our exclusive '${promoTitle}' experience.\n\nReclaim your inner peace with a treatment tailored to your soul. Your sanctuary awaits.\"\n\n📸 RECOMMENDATION: Use a 'Slow-Mo' video of pouring essential oil or a photo of a perfectly styled treatment room with candlelight.\n\n✨ Premium Thai Healing\n📍 ${storeConfig.address}\n#LuxurySpa #WellnessJourney #ThaiOilMassage #RelaxationAU`,
+        
+        flash: `🔥 STYLE C: FLASH SALE (High Conversion)\n\n"LIMITED TIME OFFER: YOUR BODY WILL THANK YOU! ⚡️\n\nWe're bringing you an unmissable opportunity to reset your wellness clock at ${storeConfig.storeName}.\n\n💥 DEALS: '${promoTitle}'\n\nAvailable for a strictly limited period. Our slots fill up fast—don't let this be the one that got away!\"\n\n📸 RECOMMENDATION: High-contrast graphic with 'LIMITED SLOTS' in bold gold text. Show a happy client walking out of the shop.\n\n✅ Book Now: ${storeConfig.phone}\n#FlashSale #SydneyDeals #MassageOffers #WellnessAuckland`
+      };
+      
+      setGeneratedPost(styles.specialist + "\n\n---\n\n" + styles.luxury + "\n\n---\n\n" + styles.flash);
+      setIsGenerating(false);
+      setMiraMessage(t('หนูเจนโพสต์ให้ 3 สไตล์แล้วค่ะคุณป้า! ลองเลือกใช้ดูและเตรียมรูปตามที่หนูบอกนะคะ 🍊', 'I\'ve generated 3 styles for you! Check my image recommendations too! 🍊'));
+    }, 2000);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setMiraMessage(t('คัดลอกลงคลิปบอร์ดแล้วค่ะ! 🍊', 'Copied to clipboard! 🍊'));
+  };
+
   const [staff, setStaff] = useState<StaffStatus[]>(
     therapists.map(t => ({
       therapistId: t.id,
@@ -714,6 +751,115 @@ export default function OwnerDashboard() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
+          {/* Marketing Assistant Modal */}
+          <AnimatePresence>
+            {isSocialGenOpen && (
+              <div className="fixed inset-0 z-[500] flex items-center justify-center p-6">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsSocialGenOpen(false)}
+                  className="absolute inset-0 bg-navy/90 backdrop-blur-2xl"
+                />
+                
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                  className="relative bg-slate-900 w-full max-w-5xl rounded-[4rem] border-4 border-primary shadow-[0_0_100px_rgba(184,150,46,0.3)] overflow-hidden flex flex-col max-h-[90vh]"
+                >
+                  <div className="p-12 md:p-16 space-y-10 overflow-y-auto custom-scrollbar">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 bg-primary/20 rounded-[2.5rem] flex items-center justify-center text-primary">
+                          <Sparkles size={40} />
+                        </div>
+                        <div>
+                          <h3 className="text-4xl md:text-5xl font-serif font-black text-white italic tracking-tight">{t('AI Marketing Hub', 'AI Marketing Hub')}</h3>
+                          <p className="text-xl text-slate-400 uppercase font-black tracking-widest mt-2">{t('เปลี่ยนไอเดียไทย เป็นโพสต์ฝรั่งระดับโปร', 'Convert Thai ideas to Pro English Posts')}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setIsSocialGenOpen(false)}
+                        className="p-4 bg-slate-800 rounded-3xl text-slate-400 hover:text-white transition-all shadow-xl"
+                      >
+                        <X size={32} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                      <div className="space-y-8">
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black uppercase tracking-[0.5em] text-primary">{t('หัวข้อโปรโมชั่น (ภาษาไทย)', 'PROMO TOPIC (THAI)')}</label>
+                          <textarea 
+                            value={promoTitle}
+                            onChange={(e) => setPromoTitle(e.target.value)}
+                            placeholder={t('เช่น นวดน้ำมันลด 20% เฉพาะวันพุธ...', 'Example: 20% off Oil Massage on Wednesdays...')}
+                            className="w-full h-48 bg-slate-950/50 border-2 border-slate-800 rounded-[2.5rem] p-8 text-2xl text-white placeholder:text-slate-700 focus:border-primary transition-all resize-none font-serif italic"
+                          />
+                        </div>
+
+                        <button 
+                          onClick={generateSocialPost}
+                          disabled={isGenerating}
+                          className="w-full py-8 bg-primary text-navy rounded-3xl text-2xl font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Clock size={32} className="animate-spin" />
+                              {t('กำลังร่ายมนต์...', 'GENERATING...')}
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={32} />
+                              {t('เจนโพสต์โซเชียล', 'GENERATE SOCIAL POST')}
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="space-y-6">
+                        <label className="text-[10px] font-black uppercase tracking-[0.5em] text-primary/60">{t('ผลลัพธ์ (คัดลอกไปใช้ได้เลย)', 'RESULT (COPY & USE)')}</label>
+                        <div className="ai-glowing-box p-8 h-[500px] overflow-y-auto custom-scrollbar group">
+                          {generatedPost ? (
+                            <div className="space-y-12">
+                              {generatedPost.split('---\n\n').map((post, idx) => (
+                                <div key={idx} className="space-y-6 relative pb-12 border-b-2 border-white/5 last:border-b-0 last:pb-0">
+                                  <div className="flex items-center justify-between sticky top-0 bg-navy py-4 z-10 transition-all border-b border-white/5">
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] font-black text-primary uppercase tracking-widest">AU/NZ MARKETING STYLE {idx + 1}</span>
+                                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Generated by Wellness AI Pro</span>
+                                    </div>
+                                    <button 
+                                      onClick={() => {
+                                        copyToClipboard(post);
+                                        setMiraMessage(t('คัดลอกคอนเทนต์แล้วค่ะ ป้าเอาไปวางใน Facebook ได้เลย! 🍊', 'Content copied! You can paste it on Facebook now! 🍊'));
+                                      }}
+                                      className="copy-button-glow flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary hover:bg-primary hover:text-navy rounded-2xl text-xs font-black transition-all shadow-xl"
+                                    >
+                                      <Copy size={16} /> {t('คัดลอกคอนเทนต์', 'COPY CONTENT')}
+                                    </button>
+                                  </div>
+                                  <p className="text-xl text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">{post}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 opacity-30">
+                              <Share2 size={80} strokeWidth={1} className="text-primary" />
+                              <p className="text-2xl font-serif italic text-slate-400">{t('พิมพ์หัวข้อไทยด้านซ้าย\nแล้วหนูจะเจนเป็นอังกฤษให้ค่ะ', 'Type your Thai idea on the left,\nand I will generate professional English hooks for you.')}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {activeTab === 'overview' && (
             <motion.div 
               key="overview"
@@ -734,6 +880,32 @@ export default function OwnerDashboard() {
                   <h4 className="text-xl font-serif font-bold text-white">{t('สถานะเตียง / Bed Status', 'Bed Status')}</h4>
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                  <button 
+                    onClick={() => setIsSocialGenOpen(true)}
+                    className="flex items-center gap-2 px-6 py-2 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-2xl font-bold hover:bg-blue-600 hover:text-white transition-all shadow-lg text-xs shrink-0"
+                  >
+                    <Share2 size={16} /> {t('ผู้ช่วยการตลาด', 'Marketing Assistant')}
+                  </button>
+                  <div className="flex items-center gap-4 bg-slate-800 p-2 rounded-[2rem] border-2 border-slate-700 shadow-2xl">
+                    <button 
+                      onClick={() => removeBed()}
+                      className="w-14 h-14 flex items-center justify-center rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-xl text-3xl font-black border-2 border-red-500/20 active:scale-90"
+                      title={t('ลบเตียง', 'Remove Bed')}
+                    >
+                      -
+                    </button>
+                    <div className="px-6 flex flex-col items-center">
+                      <span className="text-2xl font-black text-white">{beds.length}</span>
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{t('จำนวนเตียง', 'BEDS')}</span>
+                    </div>
+                    <button 
+                      onClick={() => addBed('Body')}
+                      className="w-14 h-14 flex items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-xl text-3xl font-black border-2 border-emerald-500/20 active:scale-90"
+                      title={t('เพิ่มเตียง', 'Add Bed')}
+                    >
+                      +
+                    </button>
+                  </div>
                   <button 
                     onClick={() => setIsQuickAddOpen(true)}
                     className="flex items-center gap-2 px-4 md:px-6 py-2 gold-gradient text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg text-[10px] md:text-xs shrink-0"

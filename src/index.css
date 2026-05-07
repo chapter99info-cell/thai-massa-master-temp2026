@@ -26,6 +26,52 @@
 body {
   background-color: var(--background-color);
   @apply text-slate-800 font-sans;
+  font-size: 1.25rem; /* 20px base for high readability */
+}
+
+h1, h2, h3, .heading-xl {
+  font-size: 2.5rem !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+  @apply tracking-tight;
+}
+
+.heading-lg {
+  font-size: 2rem !important;
+}
+
+.text-gold {
+  color: var(--primary-color);
+}
+
+.bg-gold {
+  background-color: var(--primary-color);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #B8962E 0%, #E2C374 50%, #B8962E 100%);
+}
+
+.navy-gradient {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+}
+
+.ai-glowing-box {
+  @apply bg-navy rounded-[2rem] relative overflow-hidden;
+  border: 2px solid transparent;
+  background-image: linear-gradient(#0F172A, #0F172A), linear-gradient(45deg, #B8962E, #F5F5DC);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 10px 40px -10px rgba(184, 150, 46, 0.3);
+}
+
+.copy-button-glow {
+  @apply transition-all duration-300;
+}
+
+.copy-button-glow:hover {
+  box-shadow: 0 0 20px rgba(184, 150, 46, 0.5);
+  @apply scale-105;
 }
 
 /* 1. คุมขนาดรวม (Container Control) */

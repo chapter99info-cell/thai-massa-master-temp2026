@@ -10,19 +10,28 @@ interface PinContextType {
   logout: () => void;
   isAuthenticated: boolean;
   refreshPins: () => void;
+  showSessionWarning: boolean;
+  resetTimer: () => void;
 }
 
 const PinContext = createContext<PinContextType | undefined>(undefined);
 
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+const WARNING_TIMEOUT = 29 * 60 * 1000; // Warning at 29 minutes
 
 export function PinProvider({ children }: { children: React.ReactNode }) {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(null);
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [pins, setPins] = useState(getAppSettings());
 
   const refreshPins = useCallback(() => {
     setPins(getAppSettings());
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    setLastActivity(Date.now());
+    setShowSessionWarning(false);
   }, []);
 
   const login = (pin: string): boolean => {
@@ -51,13 +60,17 @@ export function PinProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setAccessLevel(null);
+    setShowSessionWarning(false);
   }, []);
 
   // Idle timeout logic
   useEffect(() => {
     if (!accessLevel) return;
 
-    const handleActivity = () => setLastActivity(Date.now());
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+      if (showSessionWarning) setShowSessionWarning(false);
+    };
     
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
@@ -65,10 +78,14 @@ export function PinProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('touchstart', handleActivity);
 
     const interval = setInterval(() => {
-      if (Date.now() - lastActivity > SESSION_TIMEOUT) {
+      const inactiveTime = Date.now() - lastActivity;
+      
+      if (inactiveTime > SESSION_TIMEOUT) {
         logout();
+      } else if (inactiveTime > WARNING_TIMEOUT) {
+        setShowSessionWarning(true);
       }
-    }, 60000); // Check every minute
+    }, 10000); // Check every 10 seconds
 
     return () => {
       window.removeEventListener('mousemove', handleActivity);
@@ -77,7 +94,7 @@ export function PinProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('touchstart', handleActivity);
       clearInterval(interval);
     };
-  }, [accessLevel, lastActivity, logout]);
+  }, [accessLevel, lastActivity, logout, showSessionWarning]);
 
   return (
     <PinContext.Provider value={{ 
@@ -85,7 +102,9 @@ export function PinProvider({ children }: { children: React.ReactNode }) {
       login, 
       logout, 
       isAuthenticated: !!accessLevel,
-      refreshPins
+      refreshPins,
+      showSessionWarning,
+      resetTimer
     }}>
       {children}
     </PinContext.Provider>

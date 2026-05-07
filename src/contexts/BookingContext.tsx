@@ -5,6 +5,8 @@ interface BookingContextType {
   bookings: any[];
   addBooking: (booking: any) => void;
   updateBedStatus: (bedId: string, status: 'Vacant' | 'Occupied' | 'Reserved' | 'In Use') => void;
+  addBed: (type: 'Foot' | 'Body' | 'VIP') => void;
+  removeBed: () => void;
   beds: Bed[];
 }
 
@@ -22,13 +24,13 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     
     // Default beds if not in localStorage
     return [
-      { id: 'b1', number: '1', type: 'Massage', status: 'Vacant' },
-      { id: 'b2', number: '2', type: 'Massage', status: 'Vacant' },
-      { id: 'b3', number: '3', type: 'Massage', status: 'Vacant' },
-      { id: 'b4', number: '4', type: 'Massage', status: 'Vacant' },
-      { id: 'b5', number: '5', type: 'Massage', status: 'Vacant' },
-      { id: 'b6', number: '6', type: 'Facial', status: 'Vacant' },
-      { id: 'b7', number: '7', type: 'Facial', status: 'Vacant' },
+      { id: 'b1', number: '1', type: 'Foot', status: 'Vacant' },
+      { id: 'b2', number: '2', type: 'Foot', status: 'Vacant' },
+      { id: 'b3', number: '3', type: 'Body', status: 'Vacant' },
+      { id: 'b4', number: '4', type: 'Body', status: 'Vacant' },
+      { id: 'b5', number: '5', type: 'Body', status: 'Vacant' },
+      { id: 'b6', number: '6', type: 'VIP', status: 'Vacant' },
+      { id: 'b7', number: '7', type: 'VIP', status: 'Vacant' },
     ];
   });
 
@@ -53,8 +55,36 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     setBeds(prev => prev.map(b => b.id === bedId ? { ...b, status } : b));
   };
 
+  const addBed = (type: 'Foot' | 'Body' | 'VIP' = 'Body') => {
+    setBeds(prev => {
+      const nextNumber = prev.length > 0 
+        ? Math.max(...prev.map(b => parseInt(b.number))) + 1 
+        : 1;
+      const newBed: Bed = {
+        id: `b${Date.now()}`,
+        number: nextNumber.toString(),
+        type,
+        status: 'Vacant'
+      };
+      return [...prev, newBed];
+    });
+  };
+
+  const removeBed = () => {
+    setBeds(prev => {
+      if (prev.length === 0) return prev;
+      // Only remove if vacant
+      const lastBed = prev[prev.length - 1];
+      if (lastBed.status !== 'Vacant') {
+        alert('Cannot remove an occupied bed!');
+        return prev;
+      }
+      return prev.slice(0, -1);
+    });
+  };
+
   return (
-    <BookingContext.Provider value={{ bookings, addBooking, updateBedStatus, beds }}>
+    <BookingContext.Provider value={{ bookings, addBooking, updateBedStatus, addBed, removeBed, beds }}>
       {children}
     </BookingContext.Provider>
   );
