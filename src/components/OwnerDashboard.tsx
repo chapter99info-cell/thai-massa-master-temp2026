@@ -29,7 +29,8 @@ import {
   MessageCircle,
   QrCode,
   Shield,
-  Lock
+  Lock,
+  Download
 } from 'lucide-react';
 import { therapists } from '../data/therapists';
 import { services } from '../data/services';
@@ -547,12 +548,12 @@ export default function OwnerDashboard() {
       {/* Header */}
       <header className="bg-slate-900/50 border-b border-slate-800 px-4 md:px-8 py-4 md:py-6 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
         <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
-          <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30 shadow-lg rotate-3">
-            <TrendingUp size={24} className="md:size-32" />
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-primary/20 flex items-center justify-center text-primary border-2 border-primary/30 shadow-2xl rotate-3">
+            <TrendingUp size={40} className="md:size-48" />
           </div>
-          <div>
-            <h1 className="text-lg md:text-2xl font-serif font-bold text-white tracking-tight">{t('ระบบจัดการร้าน / POS Control Center', 'POS Control Center')}</h1>
-            <p className="text-slate-500 uppercase tracking-[0.2em] text-[8px] md:text-[10px] font-bold">
+          <div className="space-y-2">
+            <h1 className="text-2xl md:text-5xl font-serif font-black text-white tracking-tight leading-tight">{t('ระบบจัดการร้าน / POS Control Center', 'POS Control Center')}</h1>
+            <p className="text-slate-500 uppercase tracking-[0.3em] text-[10px] md:text-xl font-black">
               {storeConfig.storeName} • {t('สวัสดีค่ะคุณพี่เจ้าของร้าน', 'Welcome, Owner')}
             </p>
           </div>
@@ -652,34 +653,34 @@ export default function OwnerDashboard() {
       </header>
 
       {/* Financial Snapshot Bar */}
-      <div className="px-4 md:px-8 py-3 bg-slate-900/80 border-b border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-center gap-4 md:gap-12 sticky top-0 z-40 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-            <DollarSign size={16} />
+      <div className="px-6 md:px-12 py-6 bg-slate-900/90 border-b-2 border-slate-800 flex flex-wrap md:flex-nowrap items-center justify-center gap-8 md:gap-20 sticky top-0 z-40 backdrop-blur-xl">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 border-2 border-emerald-500/20 shadow-lg">
+            <DollarSign size={28} />
           </div>
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{t('สรุปยอดวันนี้ (Collected)', 'Collected')}</span>
-            <span className="text-sm font-black text-emerald-400">${summary.total.toFixed(2)}</span>
-          </div>
-        </div>
-        <div className="w-px h-6 bg-slate-800" />
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/20">
-            <Clock size={16} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{t('รายรับทั้งหมด (Pending)', 'Pending')}</span>
-            <span className="text-sm font-black text-orange-400">${pendingAmount.toFixed(2)}</span>
+          <div className="flex flex-col space-y-1">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">{t('สรุปยอดวันนี้ (Collected)', 'Collected')}</span>
+            <span className="text-4xl font-black text-emerald-400 tracking-tight">${summary.total.toFixed(2)}</span>
           </div>
         </div>
-        <div className="w-px h-6 bg-slate-800" />
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-            <TrendingUp size={16} />
+        <div className="hidden md:block w-px h-12 bg-slate-800" />
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 border-2 border-orange-500/20 shadow-lg">
+            <Clock size={28} />
           </div>
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Total Flow</span>
-            <span className="text-sm font-black text-white">${(summary.total + pendingAmount).toFixed(2)}</span>
+          <div className="flex flex-col space-y-1">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">{t('รายรับทั้งหมด (Pending)', 'Pending')}</span>
+            <span className="text-4xl font-black text-orange-400 tracking-tight">${pendingAmount.toFixed(2)}</span>
+          </div>
+        </div>
+        <div className="hidden md:block w-px h-12 bg-slate-800" />
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 border-2 border-indigo-500/20 shadow-lg">
+            <TrendingUp size={28} />
+          </div>
+          <div className="flex flex-col space-y-1">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Total Flow</span>
+            <span className="text-4xl font-black text-white tracking-tight">${(summary.total + pendingAmount).toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -1072,117 +1073,147 @@ export default function OwnerDashboard() {
               className="absolute inset-0 p-10 overflow-y-auto bg-[#0F172A]"
             >
               <div className="max-w-4xl mx-auto space-y-10">
-                <div className="text-center space-y-2">
-                  <div className="w-20 h-20 bg-indigo-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto text-indigo-400 border border-indigo-500/20 shadow-2xl rotate-3">
-                    <TrendingUp size={40} />
+                <div className="text-center space-y-4">
+                  <div className="w-24 h-24 bg-indigo-500/10 rounded-[3rem] flex items-center justify-center mx-auto text-indigo-400 border-2 border-indigo-500/20 shadow-2xl rotate-3">
+                    <TrendingUp size={48} />
                   </div>
-                  <h3 className="text-4xl font-serif font-bold text-white">รายงานสรุปยอดรายวัน</h3>
-                  <p className="text-slate-500 uppercase tracking-[0.3em] text-xs font-bold">Daily Performance Summary</p>
+                  <h3 className="text-5xl md:text-6xl font-serif font-black text-white italic tracking-tight">{t('รายงานสรุปยอดรายวัน', 'Daily Performance Summary')}</h3>
+                  <p className="text-slate-500 uppercase tracking-[0.4em] text-sm md:text-xl font-black">Daily Performance Summary</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 shadow-xl space-y-4">
-                    <div className="flex items-center gap-3 text-emerald-400">
-                      <Banknote size={24} />
-                      <span className="text-xs font-black uppercase tracking-widest">{t('ยอดเงินสด', 'Cash Total')}</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="bg-slate-900/50 p-12 rounded-[3.5rem] border-2 border-emerald-500/20 shadow-2xl space-y-6">
+                    <div className="flex items-center gap-5 text-emerald-400">
+                      <Banknote size={40} />
+                      <span className="text-sm md:text-lg font-black uppercase tracking-[0.3em] font-sans">{t('ยอดเงินสด', 'Cash Total')}</span>
                     </div>
-                    <p className="text-4xl font-black text-white">${summary.Cash.toFixed(2)}</p>
+                    <p className="text-6xl md:text-7xl font-black text-white font-mono tracking-tight">${summary.Cash.toFixed(2)}</p>
                   </div>
-                  <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 shadow-xl space-y-4">
-                    <div className="flex items-center gap-3 text-blue-400">
-                      <CreditCard size={24} />
-                      <span className="text-xs font-black uppercase tracking-widest">{t('ยอดบัตร', 'Card Total')}</span>
+                  <div className="bg-slate-900/50 p-12 rounded-[3.5rem] border-2 border-blue-500/20 shadow-2xl space-y-6">
+                    <div className="flex items-center gap-5 text-blue-400">
+                      <CreditCard size={40} />
+                      <span className="text-sm md:text-lg font-black uppercase tracking-[0.3em] font-sans">{t('ยอดบัตร', 'Card Total')}</span>
                     </div>
-                    <p className="text-4xl font-black text-white">${summary.Card.toFixed(2)}</p>
+                    <p className="text-6xl md:text-7xl font-black text-white font-mono tracking-tight">${summary.Card.toFixed(2)}</p>
                   </div>
-                  <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 shadow-xl space-y-4">
-                    <div className="flex items-center gap-3 text-indigo-400">
-                      <Wallet size={24} />
-                      <span className="text-xs font-black uppercase tracking-widest">{t('ยอด PayID', 'PayID Total')}</span>
+                  <div className="bg-slate-900/50 p-12 rounded-[3.5rem] border-2 border-indigo-500/20 shadow-2xl space-y-6">
+                    <div className="flex items-center gap-5 text-indigo-400">
+                      <Wallet size={40} />
+                      <span className="text-sm md:text-lg font-black uppercase tracking-[0.3em] font-sans">{t('ยอด PayID', 'PayID Total')}</span>
                     </div>
-                    <p className="text-4xl font-black text-white">${summary.PayID.toFixed(2)}</p>
+                    <p className="text-6xl md:text-7xl font-black text-white font-mono tracking-tight">${summary.PayID.toFixed(2)}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-indigo-500/10 p-10 rounded-[3rem] border border-indigo-500/20 shadow-2xl flex justify-between items-center">
-                    <div className="space-y-1">
-                      <p className="text-xs font-black text-indigo-400 uppercase tracking-[0.2em]">{t('รายรับรวม', 'Gross Revenue')}</p>
-                      <h4 className="text-5xl font-black text-white">${summary.total.toFixed(2)}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="bg-indigo-500/10 p-12 rounded-[4rem] border-2 border-indigo-500/20 shadow-2xl flex justify-between items-center group hover:bg-indigo-500/20 transition-all">
+                    <div className="space-y-3">
+                      <p className="text-sm font-black text-indigo-400 uppercase tracking-[0.3em]">{t('รายรับรวม', 'Gross Revenue')}</p>
+                      <h4 className="text-7xl font-black text-white tracking-tight">${summary.total.toFixed(2)}</h4>
                     </div>
-                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-indigo-400">
-                      <TrendingUp size={32} />
+                    <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center text-indigo-400 border border-white/10 shadow-inner">
+                      <TrendingUp size={48} />
                     </div>
                   </div>
-                      <div className="bg-primary/10 p-10 rounded-[3rem] border border-primary/20 shadow-2xl flex justify-between items-center">
-                        <div className="space-y-1">
-                          <p className="text-xs font-black text-primary uppercase tracking-[0.2em]">{t('ค่าดูแลระบบ', 'System GP Fee')} ({settings.gpFeePercent}%)</p>
-                          <h4 className="text-5xl font-black text-white">${summary.gpFee.toFixed(2)}</h4>
-                        </div>
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-primary">
-                          <DollarSign size={32} />
-                        </div>
-                      </div>
+                  <div className="bg-primary/10 p-12 rounded-[4rem] border-2 border-primary/20 shadow-2xl flex justify-between items-center group hover:bg-primary/20 transition-all">
+                    <div className="space-y-3">
+                      <p className="text-sm font-black text-primary uppercase tracking-[0.3em]">{t('ค่าดูแลระบบ', 'System GP Fee')} ({settings.gpFeePercent}%)</p>
+                      <h4 className="text-7xl font-black text-white tracking-tight">${summary.gpFee.toFixed(2)}</h4>
+                    </div>
+                    <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center text-primary border border-white/10 shadow-inner">
+                      <DollarSign size={48} />
+                    </div>
+                  </div>
                 </div>
 
                 {/* PayID Audit Note */}
-                <div className="bg-indigo-500/5 border border-indigo-500/20 p-8 rounded-[2.5rem] flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex-shrink-0 flex items-center justify-center text-white shadow-lg">
-                    <Clock size={24} />
+                <div className="bg-indigo-500/5 border-2 border-indigo-500/20 p-12 rounded-[3.5rem] flex items-start gap-8 shadow-2xl">
+                  <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500 flex-shrink-0 flex items-center justify-center text-white shadow-xl">
+                    <Clock size={32} />
                   </div>
-                  <div className="space-y-2">
-                    <h5 className="text-lg font-bold text-white">ระบบตรวจสอบ PayID อัตโนมัติ (Auto-Audit)</h5>
-                    <p className="text-sm text-slate-400 leading-relaxed">
+                  <div className="space-y-4">
+                    <h5 className="text-2xl font-black text-white leading-tight">ระบบตรวจสอบ PayID อัตโนมัติ (Auto-Audit)</h5>
+                    <p className="text-xl text-slate-400 font-medium leading-relaxed">
                       {t('คุณป้าคะ หนูจดเวลาที่เงินเข้าแบบเป๊ะๆ (วินาที) ไว้ให้แล้วนะคะ ป้าสามารถเปิดแอปธนาคารแล้วเทียบยอดเงินเข้ากับเวลาที่หนูจดไว้ได้เลยค่ะ ข้อมูลนี้ระบบจดเอง พี่ๆ เมเนเจอร์แก้ไขไม่ได้ค่ะ สบายใจได้เลย!', 'Owner, I have recorded the exact time (including seconds) for every PayID transaction. You can compare your bank statement with my recorded time to verify payments. This data is system-generated and cannot be edited by managers!')}
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-slate-900/30 p-10 rounded-[3rem] border border-slate-800">
-                  <h4 className="text-xl font-serif font-bold text-white mb-6">Recent Transactions (Admin Control)</h4>
-                  <div className="space-y-4">
+                <div className="bg-slate-900/30 p-10 md:p-14 rounded-[4rem] border-2 border-slate-800 shadow-inner">
+                  <h4 className="text-3xl font-serif font-black text-white mb-10 italic tracking-tight">{t('ประวัติการทำรายการ (Admin Control)', 'Recent Transactions')}</h4>
+                  <div className="space-y-6">
                     {salesLog.slice(-10).reverse().map((sale, i) => (
                       <div key={i} className={cn(
-                        "flex justify-between items-center p-4 rounded-2xl border transition-all",
-                        sale.type === 'VOID' ? "bg-red-500/5 border-red-500/20 opacity-50" : "bg-slate-800/30 border-slate-700/30"
+                        "flex justify-between items-center p-8 rounded-[2rem] border-2 transition-all shadow-xl",
+                        sale.type === 'VOID' ? "bg-red-500/5 border-red-500/20 opacity-50 grayscale" : "bg-slate-800/40 border-slate-700/50 hover:border-gold/30 hover:bg-slate-800/60"
                       )}>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-8">
                           <div className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center",
-                            sale.type === 'VOID' ? "bg-slate-700 text-slate-500" : "bg-slate-700 text-slate-400"
+                            "w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg border",
+                            sale.type === 'VOID' ? "bg-slate-700 text-slate-500 border-slate-600" : "bg-slate-700/50 text-gold border-slate-600"
                           )}>
-                            {sale.method === 'Cash' ? <Banknote size={18} /> : sale.method === 'Card' ? <CreditCard size={18} /> : <Wallet size={18} />}
+                            {sale.method === 'Cash' ? <Banknote size={32} /> : sale.method === 'Card' ? <CreditCard size={32} /> : <Wallet size={32} />}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold text-white">{sale.customer} - {sale.service}</p>
-                              {sale.type === 'VOID' && <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">VOIDED</span>}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-4">
+                              <p className="text-2xl font-black text-white tracking-wide">{sale.customer} - {sale.service}</p>
+                              {sale.type === 'VOID' && <span className="bg-red-600 text-white text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-lg animate-pulse">VOIDED</span>}
                             </div>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">
-                              {new Date(sale.timestamp).toLocaleTimeString()} {sale.transactionTimestamp && <span className="text-primary font-black ml-1">({sale.transactionTimestamp})</span>} • Bed {sale.bedNumber} • {sale.therapist}
+                            <p className="text-lg text-slate-400 font-bold uppercase tracking-[0.1em] leading-relaxed">
+                              {new Date(sale.timestamp).toLocaleTimeString('th-TH')} {sale.transactionTimestamp && <span className="text-gold font-black ml-2">({sale.transactionTimestamp})</span>} • {t('เตียง', 'Bed')} {sale.bedNumber} • {sale.therapist}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-10">
                           <p className={cn(
-                            "text-lg font-black",
+                            "text-4xl font-black font-mono tracking-tight",
                             sale.type === 'VOID' ? "text-slate-500 line-through" : "text-white"
                           )}>${sale.amount.toFixed(2)}</p>
                           
                           {sale.type !== 'VOID' && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-4">
                               <button 
                                 onClick={() => handleVoidTransaction(sale.id)}
-                                className="p-2 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-lg transition-all"
+                                className="w-14 h-14 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-2xl transition-all border-2 border-red-500/20 flex items-center justify-center shadow-lg"
                                 title="Void Transaction"
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={24} />
                               </button>
                             </div>
                           )}
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div className="pt-14 flex flex-col items-center">
+                  <button 
+                    onClick={() => {
+                      window.print();
+                      setMiraMessage(t('กำลังเตรียมไฟล์สรุปรายได้และภาษีให้คุณป้านะคะ 🍊', 'Preparing income and tax summary for you. 🍊'));
+                    }}
+                    className="w-full md:w-auto px-16 py-8 bg-[#D4AF37] text-slate-900 rounded-[3rem] font-black text-xl md:text-2xl uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-[#D4AF37]/30 flex items-center justify-center gap-6 group"
+                  >
+                    <Download size={32} className="group-hover:bounce" />
+                    Download Tax Report (สรุปส่งบัญชี)
+                  </button>
+                  
+                  <div className="mt-14 bg-[#D4AF37]/10 border-2 border-[#D4AF37]/20 p-12 rounded-[4rem] flex items-start gap-8 max-w-4xl shadow-2xl">
+                    <div className="text-6xl animate-bounce">🍊</div>
+                    <div className="space-y-6 text-left">
+                      <h5 className="text-2xl font-serif font-black text-white italic tracking-tight underline decoration-gold/30 underline-offset-8">เคล็ดลับสำหรับคุณป้า 🍊</h5>
+                      <div className="space-y-4">
+                        <p className="text-lg md:text-2xl text-slate-400 leading-relaxed italic font-medium">
+                          "เวลาส่งไฟล์ให้นักบัญชี พี่ป้าลองบอกเขาแบบนี้นะคะ จะดูเป็นมือโปรและชัดเจนมากค่ะ:
+                        </p>
+                        <div className="p-8 bg-slate-900/50 rounded-3xl border border-gold/20">
+                          <p className="text-xl md:text-3xl text-gold font-black not-italic leading-tight">
+                            'นี่คือไฟล์สรุปรายได้จากระบบ Premium Thai Wellness ครับ แยกยอดรายได้รวม, GST และค่าธรรมเนียม Platform ไว้ให้เรียบร้อยแล้ว ข้อมูลซิงค์มาจากระบบจองหน้าร้านโดยตรง แม่นยำ 100% ครับ'
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2186,48 +2217,48 @@ export default function OwnerDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">บริการ / Service</p>
-                      <p className="text-xl font-medium text-primary font-sans">{paymentSession.currentService}</p>
+                  <div className="flex justify-between items-center bg-slate-900/50 p-6 rounded-3xl border border-white/5">
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500 uppercase font-black tracking-widest">{t('บริการ / Service', 'Service')}</p>
+                      <p className="text-3xl font-black text-primary font-sans leading-tight">{paymentSession.currentService}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">ยอดรวม (Inc. GST) / Total</p>
-                      <p className="text-4xl font-black text-white font-sans">${paymentSession.currentPrice}</p>
+                    <div className="text-right space-y-1">
+                      <p className="text-sm text-slate-500 uppercase font-black tracking-widest">{t('ยอดรวม / Total', 'Total')}</p>
+                      <p className="text-6xl font-black text-white font-sans tracking-tight">${paymentSession.currentPrice}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <p className="text-center text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] font-sans">เลือกวิธีชำระเงิน / Select Payment Method</p>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  <p className="text-center text-sm md:text-xl text-slate-500 uppercase font-black tracking-[0.3em] font-sans italic">{t('เลือกวิธีชำระเงิน / Select Payment Method', 'Select Payment Method')}</p>
+                  <div className="grid grid-cols-2 gap-6">
                     <button 
                       onClick={() => processPayment('Cash')}
-                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-primary hover:bg-primary/5 transition-all group"
+                      className="flex flex-col items-center justify-center gap-5 p-10 bg-slate-800 rounded-[2.5rem] border-4 border-slate-700 hover:border-emerald-500 hover:bg-emerald-500/10 transition-all group shadow-xl active:scale-95"
                     >
-                      <Banknote size={24} className="text-slate-400 group-hover:text-primary" />
-                      <span className="font-bold text-white text-sm">เงินสด / CASH</span>
+                      <Banknote size={48} className="text-slate-500 group-hover:text-emerald-400 group-hover:scale-110 transition-transform" />
+                      <span className="font-black text-white text-lg md:text-2xl tracking-widest">{t('เงินสด / CASH', 'CASH')}</span>
                     </button>
                     <button 
                       onClick={() => processPayment('Card')}
-                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-primary hover:bg-primary/5 transition-all group"
+                      className="flex flex-col items-center justify-center gap-5 p-10 bg-slate-800 rounded-[2.5rem] border-4 border-slate-700 hover:border-blue-500 hover:bg-blue-500/10 transition-all group shadow-xl active:scale-95"
                     >
-                      <CreditCard size={24} className="text-slate-400 group-hover:text-primary" />
-                      <span className="font-bold text-white text-sm">บัตร / CARD</span>
+                      <CreditCard size={48} className="text-slate-500 group-hover:text-blue-400 group-hover:scale-110 transition-transform" />
+                      <span className="font-black text-white text-lg md:text-2xl tracking-widest">{t('บัตร / CARD', 'CARD')}</span>
                     </button>
                     <button 
                       onClick={() => processPayment('PayID')}
-                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-primary hover:bg-primary/5 transition-all group"
+                      className="flex flex-col items-center justify-center gap-5 p-10 bg-slate-800 rounded-[2.5rem] border-4 border-slate-700 hover:border-indigo-500 hover:bg-indigo-500/10 transition-all group shadow-xl active:scale-95"
                     >
-                      <Wallet size={24} className="text-slate-400 group-hover:text-primary" />
-                      <span className="font-bold text-white text-sm">เพย์ไอดี / PAYID</span>
+                      <Wallet size={48} className="text-slate-500 group-hover:text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <span className="font-black text-white text-lg md:text-2xl tracking-widest">{t('เพย์ไอดี / PAYID', 'PAYID')}</span>
                     </button>
                     <button 
                       onClick={() => setPaymentMethod('HICAPS')}
-                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-primary hover:bg-primary/5 transition-all group"
+                      className="flex flex-col items-center justify-center gap-5 p-10 bg-slate-800 rounded-[2.5rem] border-4 border-slate-700 hover:border-primary hover:bg-primary/10 transition-all group shadow-xl active:scale-95"
                     >
-                      <Receipt size={24} className="text-slate-400 group-hover:text-primary" />
-                      <span className="font-bold text-white text-sm">HICAPS</span>
+                      <Receipt size={48} className="text-slate-500 group-hover:text-primary group-hover:scale-110 transition-transform" />
+                      <span className="font-black text-white text-lg md:text-2xl tracking-widest">HICAPS</span>
                     </button>
                   </div>
 

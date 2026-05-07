@@ -12,6 +12,7 @@ import Cart from './components/Cart';
 import StaffDashboard from './components/StaffDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
+import ManagerInsights from './components/ManagerInsights';
 import PinEntry from './components/PinEntry';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
 import PartnerDirectory from './components/PartnerDirectory';
@@ -29,14 +30,29 @@ function ProtectedRoute({ children, level }: { children: React.ReactNode, level:
   const { accessLevel, isAuthenticated } = usePin();
   const settings = getAppSettings();
   
-  if (!isAuthenticated) return <PinEntry />;
-  
-  // Admin can access everything, Owner can access manager, staff and owner, Staff can only access staff
-  const levels = { staff: 1, manager: 2, owner: 3, admin: 4 };
-  if (levels[accessLevel!] < levels[level]) return <PinEntry />;
+  // 🍊 น้องส้มเพิ่ม Log ให้พี่เช็กที่หน้า Console (F12) นะคะ
+  console.log("--- Som Debug Access ---");
+  console.log("Current Path Level Required:", level);
+  console.log("User Authenticated:", isAuthenticated);
+  console.log("User Access Level:", accessLevel);
+  console.log("Config (showPosMode):", settings.showPosMode);
 
-  // Special check for manager dashboard feature toggle
-  if (level === 'manager' && !settings.showPosMode) return <PinEntry />;
+  if (!isAuthenticated) {
+    console.log("🍊 น้องส้มบอกว่า: พี่ต้องไปหน้าใส่ PIN ก่อนนะ!");
+    return <PinEntry />;
+  }
+  
+  const levels = { staff: 1, manager: 2, owner: 3, admin: 4 };
+  
+  if (levels[accessLevel!] < levels[level]) {
+    console.log("🍊 น้องส้มบอกว่า: เลเวลพี่ไม่ถึงคลาสนี้ค่ะ!");
+    return <PinEntry />;
+  }
+
+  if (level === 'manager' && !settings.showPosMode) {
+    console.log("🍊 น้องส้มบอกว่า: ลืมเปิดโหมด POS ใน Config หรือเปล่า?");
+    return <PinEntry />;
+  }
   
   return <>{children}</>;
 }
@@ -88,6 +104,11 @@ export default function App() {
                           enablePrinting={getAppSettings().enableThermalPrinting}
                           billingPlan={getAppSettings().billingPlan || 'GP%'}
                         />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/manager-insights" element={
+                      <ProtectedRoute level="manager">
+                        <ManagerInsights />
                       </ProtectedRoute>
                     } />
                     <Route path="/owner-report" element={

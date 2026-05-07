@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock as LockIcon, Play, CheckCircle, Clock, User, DollarSign, LogOut, RefreshCw, Sparkles, X, AlertTriangle, LogIn, ChevronDown } from 'lucide-react';
+import { Lock as LockIcon, Play, CheckCircle, Clock, User, DollarSign, LogOut, RefreshCw, Sparkles, X, AlertTriangle, LogIn, ChevronDown, Receipt, Download, Wifi, WifiOff } from 'lucide-react';
 import { storeConfig, getAppSettings } from '../config';
 import { StaffSession, AttendanceEntry, AlertEntry } from '../types';
 import { cn } from '../lib/utils';
@@ -10,6 +10,8 @@ import { fetchWithRetry } from '../lib/apiUtils';
 import LoadingOverlay from './LoadingOverlay';
 
 import { usePin } from '../contexts/PinContext';
+import { googleSheetService } from '../services/googleSheetService';
+import PrintableReceipt from './PrintableReceipt';
 
 // Mock initial data for the dashboard
 const INITIAL_SESSIONS: StaffSession[] = [
@@ -36,7 +38,108 @@ export default function StaffDashboard() {
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceEntry[]>([]);
   const [customIssue, setCustomIssue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [offlineQueue, setOfflineQueue] = useState<any[]>([]);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [selectedReceiptSession, setSelectedReceiptSession] = useState<StaffSession | null>(null);
 
+  const wakeLockRef = useRef<any>(null);
+
+  // Screen Wake Lock Logic
+  const requestWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        console.log('🍊 Wake Lock: Active');
+      } catch (err: any) {
+        console.error(`🍊 Wake Lock Error: ${err.name}, ${err.message}`);
+      }
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release();
+      wakeLockRef.current = null;
+      console.log('🍊 Wake Lock: Released');
+    }
+  };
+
+  // Sync state with LocalStorage
+  useEffect(() => {
+    const savedSessions = localStorage.getItem('active_sessions');
+    const savedCompleted = localStorage.getItem('completed_sessions');
+    const savedQueue = localStorage.getItem('offline_queue');
+
+    if (savedSessions) setSessions(JSON.parse(savedSessions));
+    if (savedCompleted) setCompletedSessions(JSON.parse(savedCompleted));
+    if (savedQueue) setOfflineQueue(JSON.parse(savedQueue));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('active_sessions', JSON.stringify(sessions));
+  }, [sessions]);
+
+  useEffect(() => {
+    localStorage.setItem('completed_sessions', JSON.stringify(completedSessions));
+  }, [completedSessions]);
+
+  useEffect(() => {
+    localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+  }, [offlineQueue]);
+
+  // Online/Offline Listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setSomMessage(t('กลับมาออนไลน์แล้วค่ะ! น้องส้มกำลังรีบซิงค์ข้อมูลที่ค้างไว้ให้จบนะคะ 🍊', 'Back online! Syncing your data now... 🍊'));
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setSomMessage(t('เน็ตหลุดค่ะพี่! ไม่ต้องตกใจนะคะ น้องส้มจดข้อมูลลงเครื่องไว้ให้แล้ว พอเน็ตมาจะซิงค์ให้ทันทีค่ะ 🍊', 'Network disconnected! Don\'t worry, I\'m saving your data locally. 🍊'));
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Offline Sync Logic
+  useEffect(() => {
+    if (isOnline && offlineQueue.length > 0) {
+      const syncQueue = async () => {
+        const item = offlineQueue[0];
+        try {
+          if (item.type === 'START_SESSION') {
+            await googleSheetService.submitBooking(item.data);
+          } else if (item.type === 'CLOCK_IN' || item.type === 'CLOCK_OUT') {
+            // Assume we have a generic log function or use the specific one
+            console.log('Syncing attendance:', item.data);
+          }
+          
+          setOfflineQueue(prev => prev.slice(1));
+        } catch (error) {
+          console.error('Sync failed, will retry later:', error);
+        }
+      };
+      syncQueue();
+    }
+  }, [isOnline, offlineQueue]);
+
+  // Screen Wake Lock & Timer Optimization
+  useEffect(() => {
+    const hasActiveSessions = sessions.some(s => s.status === 'running');
+    if (hasActiveSessions) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+
+    return () => releaseWakeLock();
+  }, [sessions]);
   const getInsuranceStatus = (expiryDate?: string) => {
     if (!expiryDate) return { status: 'valid', message: '' };
     const today = new Date();
@@ -127,34 +230,61 @@ export default function StaffDashboard() {
     setSomMessage(t('น้องส้มแจ้งปัญหาให้พี่เจ้าของร้านทราบแล้วนะคะ ไม่ต้องกังวลค่ะ 🍊', "I've notified the owner about the issue. Don't worry! 🍊"));
   };
 
-  const startSession = (id: string) => {
-    setSessions(prev => prev.map(s => {
-      if (s.id === id) {
-        const startTime = Date.now();
-        const endTime = startTime + (s.durationMins * 60 * 1000);
-        
-        // Data Sync Simulation (Google Sheets)
-        console.log('Logging to GOOGLE_SHEETS (SESSIONS):', {
-          id: s.id,
-          therapistName: s.therapistName,
-          customerName: s.customerName,
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-          status: 'STARTED',
-          bedNumber: s.bedNumber,
-          bedType: s.bedType
-        });
+  const startSession = async (id: string) => {
+    const sessionToStart = sessions.find(s => s.id === id);
+    if (!sessionToStart) return;
 
-        setSomMessage(t(`พี่หมอคะ งานใหม่ประจำที่ เตียง ${s.bedNumber} นะคะ เตรียมเตียงรอแขกได้เลยค่าา 🍊`, `New job at Bed ${s.bedNumber}. Please prepare the bed. 🍊`));
-        return { ...s, status: 'active', startTime, endTime, remainingSeconds: s.durationMins * 60 };
+    requestWakeLock();
+
+    const startTime = Date.now();
+    const durationMs = sessionToStart.durationMins * 60 * 1000;
+    const endTime = startTime + durationMs;
+
+    const updatedData = {
+      ...sessionToStart,
+      status: 'active' as const,
+      startTime,
+      endTime,
+      remainingSeconds: sessionToStart.durationMins * 60
+    };
+
+    setSessions(prev => prev.map(s => s.id === id ? updatedData : s));
+
+    const logPayload = {
+      action: 'startSession',
+      data: {
+        id: sessionToStart.id,
+        therapistName: sessionToStart.therapistName,
+        customerName: sessionToStart.customerName,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+        status: 'STARTED',
+        bedNumber: sessionToStart.bedNumber
       }
-      return s;
-    }));
+    };
+
+    if (isOnline) {
+      try {
+        await googleSheetService.submitBooking(logPayload.data);
+      } catch (error) {
+        setOfflineQueue(prev => [...prev, { type: 'START_SESSION', data: logPayload.data }]);
+      }
+    } else {
+      setOfflineQueue(prev => [...prev, { type: 'START_SESSION', data: logPayload.data }]);
+    }
+
+    setSomMessage(t(`เริ่มนวดที่เตียง ${sessionToStart.bedNumber} แล้วค่ะ น้องส้มจะคอยเฝ้านาฬิกาให้เองค่ะ 🍊`, `Started session at Bed ${sessionToStart.bedNumber}. I'll watch the clock for you. 🍊`));
   };
 
   const finishSession = (id: string) => {
     const session = sessions.find(s => s.id === id);
     if (!session) return;
+
+    // Check if any other sessions are active before releasing wake lock
+    const otherActive = sessions.filter(s => s.id !== id && s.status === 'active').length > 0;
+    if (!otherActive) {
+      releaseWakeLock();
+    }
 
     setSomMessage(t('นวดเสร็จแล้ว! เดี๋ยวส้มแจ้งพี่เจ้าของร้านให้ไปเก็บเงินที่เตียงให้นะคะ! พักผ่อนก่อนนะคะพี่หมอ 🍊', "Massage finished! I've notified the manager to collect payment at the bed. Please take a rest. 🍊"));
     
@@ -189,23 +319,35 @@ export default function StaffDashboard() {
     setSessions(prev => prev.filter(s => s.id !== id));
   };
 
-  // Timer logic
+  // Timer logic - Bulletproof System Clock Calculation
   useEffect(() => {
     const interval = setInterval(() => {
-      setSessions(prev => prev.map(s => {
-        if (s.status === 'active' && s.remainingSeconds && s.remainingSeconds > 0) {
-          const newRemaining = s.remainingSeconds - 1;
-          
-          // 5 minute reminder
-          if (newRemaining === 300) {
-            setSomMessage(t('เหลืออีก 5 นาทีจะหมดเวลาแล้วนะคะ เตรียมตัวนวดประคบหรือเช็ดตัวลูกค้าได้เลยค่ะ 🍊', '5 minutes left! Please prepare to finish the treatment. 🍊'));
+      const now = Date.now();
+      
+      setSessions(prev => {
+        let changed = false;
+        const next = prev.map(s => {
+          if (s.status === 'active' && s.endTime) {
+            const remainingMs = Math.max(0, s.endTime - now);
+            const remainingSecs = Math.ceil(remainingMs / 1000);
+            
+            if (s.remainingSeconds !== remainingSecs) {
+              changed = true;
+              
+              // 5 minute reminder logic
+              if (remainingSecs === 300) {
+                setSomMessage(t('เหลืออีก 5 นาทีจะหมดเวลาแล้วนะคะ เตรียมตัวนวดประคบหรือเช็ดตัวลูกค้าได้เลยค่ะ 🍊', '5 minutes left! Please prepare to finish the treatment. 🍊'));
+              }
+
+              return { ...s, remainingSeconds: remainingSecs };
+            }
           }
-          
-          return { ...s, remainingSeconds: newRemaining };
-        }
-        return s;
-      }));
+          return s;
+        });
+        return changed ? next : prev;
+      });
     }, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -228,6 +370,18 @@ export default function StaffDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!isOnline && (
+            <div className="flex items-center gap-1 bg-rose-50 text-rose-500 px-3 py-2 rounded-xl border border-rose-100 animate-pulse">
+              <WifiOff size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Offline (Queue: {offlineQueue.length})</span>
+            </div>
+          )}
+          {isOnline && offlineQueue.length > 0 && (
+            <div className="flex items-center gap-1 bg-blue-50 text-blue-500 px-3 py-2 rounded-xl border border-blue-100">
+              <Wifi size={16} className="animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Syncing...</span>
+            </div>
+          )}
           <button 
             onClick={() => {
                 setSomMessage(t('กำลังเปิดระบบลงคิว Walk-in... กรุณาลดหน้าจอเพื่อไปที่ระบบหลังบ้านนะคะพี่ 🍊', 'Opening Walk-in queue system... Please switch to manager dashboard for registration. 🍊'));
@@ -522,6 +676,7 @@ export default function StaffDashboard() {
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-accent/40">{t('ลูกค้า / Customer', 'Customer')}</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-accent/40">{t('บริการ / Service', 'Service')}</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-accent/40 text-right">{t('ราคา / Price', 'Price')}</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-accent/40 text-center">{t('ใบเสร็จ / Receipt', 'Receipt')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/5">
@@ -549,6 +704,18 @@ export default function StaffDashboard() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <p className="text-sm font-black text-primary">${session.price}</p>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button 
+                          onClick={() => {
+                            setSelectedReceiptSession(session);
+                            setShowReceipt(true);
+                            setSomMessage(t('กำลังเจนใบเสร็จให้แขกนะคะพี่หมอ... อย่าลืมให้แขกเช็กความถูกต้องด้วยนะคะ 🍊', 'Generating receipt for guest... Please double check accuracy. 🍊'));
+                          }}
+                          className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-navy transition-all"
+                        >
+                          <Receipt size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -762,6 +929,74 @@ export default function StaffDashboard() {
                   className="w-full py-3 text-accent/40 font-bold text-xs uppercase tracking-widest hover:text-accent/60 transition-colors"
                 >
                   {t('ยกเลิก / Cancel', 'Cancel')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* History Receipt Modal for Staff */}
+      <AnimatePresence>
+        {showReceipt && selectedReceiptSession && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowReceipt(false)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden p-10"
+            >
+              <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-6 no-print">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center text-gold">
+                    <Receipt size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-serif font-bold text-navy">{t('ใบเสร็จ / Receipt', 'Issue Receipt')}</h3>
+                    <p className="text-[10px] text-slate-400 -mt-1 uppercase tracking-widest font-black">Staff Issue System</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowReceipt(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto pr-2 mb-8 bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
+                <PrintableReceipt 
+                  bookingData={{
+                    customerName: selectedReceiptSession.customerName,
+                    serviceName: selectedReceiptSession.serviceName,
+                    therapistName: selectedReceiptSession.therapistName,
+                    amount: selectedReceiptSession.price,
+                    paymentMethod: 'Processed at Bed',
+                    date: new Date(selectedReceiptSession.endTime!)
+                  }}
+                />
+              </div>
+
+              <div className="flex gap-4 no-print">
+                <button 
+                  onClick={() => window.print()}
+                  className="flex-[2] py-5 rounded-[2rem] bg-navy text-white font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-navy/20 flex items-center justify-center gap-3"
+                >
+                  <Download size={20} />
+                  {t('Export PDF / พิมพ์', 'Generate PDF')}
+                </button>
+                <button 
+                  onClick={() => {
+                    setSomMessage(t('ส่งใบเสร็จไปที่อีเมลเรียบร้อยแล้วค่ะ! (Simulation) 🍊', 'Receipt sent to email! (Simulation) 🍊'));
+                    setShowReceipt(false);
+                  }}
+                  className="flex-1 py-5 rounded-[2rem] bg-emerald-500 text-white font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20"
+                >
+                  {t('Email', 'Email')}
                 </button>
               </div>
             </motion.div>

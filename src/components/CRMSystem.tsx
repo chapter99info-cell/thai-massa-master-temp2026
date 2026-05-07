@@ -70,6 +70,23 @@ export default function CRMSystem() {
 
   const displayCustomers = categorizedData[selectedCategory];
 
+  const getCustomerTag = (customer: Customer) => {
+    const todayDate = new Date();
+    const lastVisitDate = new Date(customer.lastVisitDate);
+    const diffDays = Math.floor((todayDate.getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (customer.totalVisits >= 30 || customer.memberTier === 'VIP') {
+      return { label: t('✨ VIP', 'VIP'), color: 'bg-gold text-navy shadow-lg shadow-gold/20' };
+    }
+    if (customer.totalVisits <= 2) {
+      return { label: t('🆕 ใหม่', 'NEW'), color: 'bg-emerald-500 text-white' };
+    }
+    if (diffDays > 60) {
+      return { label: t('⚠️ กำลังจะหาย', 'AT RISK'), color: 'bg-rose-500 text-white' };
+    }
+    return { label: t('🔵 ปกติ', 'ACTIVE'), color: 'bg-blue-500 text-white' };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -140,9 +157,14 @@ export default function CRMSystem() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-bold text-lg text-charcoal">{customer.name}</h4>
-                      {customer.memberTier === 'VIP' && (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">VIP</span>
-                      )}
+                      {(() => {
+                        const tag = getCustomerTag(customer);
+                        return (
+                          <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider", tag.color)}>
+                            {tag.label}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="flex items-center gap-1 text-[10px] text-slate-400 uppercase font-black tracking-widest"><Phone size={10} /> {customer.phone}</span>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
@@ -32,6 +33,7 @@ import {
   QrCode,
   ShieldCheck,
   Download,
+  Lock as LockIcon,
   Sparkles,
   Image as ImageIcon
 } from 'lucide-react';
@@ -45,6 +47,7 @@ import { usePin } from '../contexts/PinContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBookings } from '../contexts/BookingContext';
 import { printerService, ReceiptData } from '../services/PrinterService';
+import { googleSheetService } from '../services/googleSheetService';
 
 import AdBanner from './AdBanner';
 import PrintableReceipt from './PrintableReceipt';
@@ -114,6 +117,88 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   const [marketingInput, setMarketingInput] = useState('');
   const [marketingOutput, setMarketingOutput] = useState('');
   const [isAiProcessingMarketing, setIsAiProcessingMarketing] = useState(false);
+  const [monthlySummary, setMonthlySummary] = useState<{
+    count: number;
+    totalRevenue: number;
+    gst: number;
+    gpAmount: number;
+    month: string;
+  } | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [historyBookings, setHistoryBookings] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [selectedHistoryBooking, setSelectedHistoryBooking] = useState<any | null>(null);
+  const [showHistoryReceipt, setShowHistoryReceipt] = useState(false);
+  const [isSummaryAuthorized, setIsSummaryAuthorized] = useState(false);
+  const [showPinLock, setShowPinLock] = useState(false);
+  const [pinBuffer, setPinBuffer] = useState('');
+  const [pinError, setPinError] = useState(false);
+
+  const checkAuthorization = (action: () => void) => {
+    if (accessLevel === 'owner' || accessLevel === 'admin' || isSummaryAuthorized) {
+      action();
+    } else {
+      setShowPinLock(true);
+      setPendingAction(() => action);
+    }
+  };
+
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const handlePinSubmit = () => {
+    // In a real app, verify against server or encrypted config
+    // For this demo, manager/owner PIN is 9999
+    if (pinBuffer === '9999') {
+      setIsSummaryAuthorized(true);
+      setShowPinLock(false);
+      setPinBuffer('');
+      setPinError(false);
+      if (pendingAction) {
+        pendingAction();
+        setPendingAction(null);
+      }
+    } else {
+      setPinError(true);
+      setPinBuffer('');
+      setTimeout(() => setPinError(false), 1000);
+    }
+  };
+
+  const loadBookingHistory = async () => {
+    setIsHistoryLoading(true);
+    const data = await googleSheetService.fetchBookings();
+    if (data && data.length > 1) {
+      // Data is [headers, row1, row2...]
+      const headers = data[0];
+      const rows = data.slice(1).map((row: any[], idx: number) => {
+        const booking: any = { id: `hist-${idx}` };
+        headers.forEach((header: string, hIdx: number) => {
+          booking[header.toLowerCase().replace(/ /g, '_')] = row[hIdx];
+        });
+        
+        // Map custom fields for PrintableReceipt
+        return {
+          ...booking,
+          customerName: booking.customer_name || booking.name || 'Guest',
+          serviceName: booking.service_name || booking.service || 'Service',
+          therapistName: booking.therapist_name || booking.therapist || 'Staff',
+          amount: parseFloat(booking.price) || 0,
+          paymentMethod: booking.payment_method || booking.method || 'Cash',
+          date: new Date(booking.timestamp || booking.date || Date.now())
+        };
+      });
+      // Sort by date descending
+      setHistoryBookings(rows.sort((a, b) => b.date.getTime() - a.date.getTime()));
+    }
+    setIsHistoryLoading(false);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'payments') {
+      loadBookingHistory();
+    }
+  }, [activeTab]);
 
   const totalCashSales = salesLog.filter(s => s.method === 'Cash').reduce((acc, s) => acc + s.amount, 0);
   const cashLimit = 500; // Notify owner if cash > $500
@@ -152,7 +237,81 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     return { status: 'valid', message: '' };
   };
 
-  const GP_RATE = 0.005; // 0.5%
+  const GP_RATE = settings.gpFeePercent / 100;
+
+  const generateMonthlySummary = async () => {
+    setIsSummaryLoading(true);
+    setSomMessage(t('กำลังดึงข้อมูลการจองเพื่อสรุปยอดรายเดือนนะคะ รอแป๊บนึงค่ะ 🍊', 'Generating monthly summary... please wait. 🍊'));
+    
+    try {
+      const allBookings = await googleSheetService.fetchBookings();
+      
+      // Filter for current month (assuming index 4 is timestamp in the sheet based on common patterns)
+      // Usually Google Sheet data from Apps Script comes as array of arrays [headers, row1, row2...]
+      // We'll calculate based on what we have.
+      
+      let count = 0;
+      let totalRevenue = 0;
+      
+      if (allBookings.length > 1) {
+        // Skip header
+        const rows = allBookings.slice(1);
+        count = rows.length;
+        
+        // Find price column index (Price is usually standard in our logs)
+        // Here we'll sum up the revenue.
+        rows.forEach(row => {
+          // Row structure: [id, timestamp, shop, customer, service, therapist, price, method, type...]
+          const price = parseFloat(row[8]) || 0; // Adjusting based on typical schema
+          totalRevenue += price;
+        });
+      } else {
+        // Fallback to local session data if sheet is empty or fetch failed
+        count = salesLog.length;
+        totalRevenue = salesLog.reduce((acc, s) => acc + s.amount, 0);
+      }
+      
+      const gst = totalRevenue / 11;
+      const gpAmount = totalRevenue * GP_RATE;
+      const month = new Date().toLocaleString('th-TH', { month: 'long', year: 'numeric' });
+      
+      setMonthlySummary({
+        count,
+        totalRevenue,
+        gst,
+        gpAmount,
+        month
+      });
+      setShowSummaryModal(true);
+    } catch (error) {
+      console.error(error);
+      setSomMessage(t('อุ๊ย! ดึงข้อมูลไม่สำเร็จค่ะ ลองตรวจสอบเน็ตดูอีกทีนะคะ 🍊', 'Failed to generate summary. Please check your connection. 🍊'));
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
+
+  const handleSaveSummary = async () => {
+    if (!monthlySummary) return;
+    
+    setIsSummaryLoading(true);
+    const result = await googleSheetService.savePerformanceSummary({
+      month: monthlySummary.month,
+      bookingsCount: monthlySummary.count,
+      revenue: monthlySummary.totalRevenue,
+      gst: monthlySummary.gst,
+      platformGP: monthlySummary.gpAmount,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (result.success) {
+      setSomMessage(t('สรุปยอดส่งบัญชีเรียบร้อยแล้วค่ะ! พี่ไม่ต้องกังวลแล้วนะคะ 🍊', 'Monthly summary saved to Performance_Summary! 🍊'));
+      setShowSummaryModal(false);
+    } else {
+      setSomMessage(t('บันทึกไม่สำเร็จค่ะ โถ่... ลองกดใหม่อีกทีนะคะพี่ 🍊', 'Failed to save summary. Please try again. 🍊'));
+    }
+    setIsSummaryLoading(false);
+  };
 
   // Timer Logic
   useEffect(() => {
@@ -483,67 +642,74 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   return (
     <div className="min-h-screen bg-pearl text-navy flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-ocean/90 backdrop-blur-2xl border-b border-white/20 px-8 py-5 flex justify-between items-center shrink-0 z-40 sticky top-0 shadow-2xl">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white border border-white/30 shadow-xl rotate-3 scale-110">
-            <LayoutGrid size={32} />
+      <header className="bg-ocean/90 backdrop-blur-2xl border-b border-white/20 px-8 py-8 flex justify-between items-center shrink-0 z-40 sticky top-0 shadow-2xl">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-16 rounded-[2rem] bg-white/20 flex items-center justify-center text-white border-2 border-white/30 shadow-2xl rotate-3 scale-110">
+            <LayoutGrid size={40} />
           </div>
-          <div className="hidden md:block">
-            <h1 className="text-2xl font-serif font-black text-white tracking-tight italic leading-none">{storeConfig.storeName}</h1>
-            <p className="text-white/60 uppercase tracking-[0.5em] text-[10px] font-black mt-1">
+          <div className="hidden md:block space-y-1">
+            <h1 className="text-4xl md:text-5xl font-serif font-black text-white tracking-tight italic leading-tight">{storeConfig.storeName}</h1>
+            <p className="text-white/70 uppercase tracking-[0.4em] text-sm md:text-xl font-black">
               {t('Manager Control Hub • Ocean Breeze', 'Premium Management Solution')}
             </p>
           </div>
         </div>
 
         {/* Tab Navigation - Center */}
-        <div className="flex bg-white/10 p-1.5 rounded-[2.5rem] border border-white/20 shadow-2xl backdrop-blur-xl">
+        <div className="flex bg-white/10 p-2.5 rounded-[3.5rem] border border-white/20 shadow-2xl backdrop-blur-xl">
           <button
             onClick={() => setActiveTab('control')}
             className={cn(
-              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
               activeTab === 'control' 
-                ? "bg-gold text-navy shadow-2xl scale-105" 
-                : "text-white/50 hover:text-white"
+                ? "bg-gold text-navy shadow-2xl scale-110" 
+                : "text-white/60 hover:text-white"
             )}
           >
-            <LayoutGrid size={18} />
+            <LayoutGrid size={24} />
             <span>{t('🛏️ Board', 'Control')}</span>
           </button>
           <button
             onClick={() => setActiveTab('calendar')}
             className={cn(
-              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
               activeTab === 'calendar' 
-                ? "bg-gold text-navy shadow-2xl scale-105" 
-                : "text-white/50 hover:text-white"
+                ? "bg-gold text-navy shadow-2xl scale-110" 
+                : "text-white/60 hover:text-white"
             )}
           >
-            <Clock size={18} />
+            <Clock size={24} />
             <span>{t('📅 Calendar', 'Staff')}</span>
           </button>
           <button
             onClick={() => setActiveTab('crm')}
             className={cn(
-              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
               activeTab === 'crm' 
-                ? "bg-gold text-navy shadow-2xl scale-105" 
-                : "text-white/50 hover:text-white"
+                ? "bg-gold text-navy shadow-2xl scale-110" 
+                : "text-white/60 hover:text-white"
             )}
           >
-            <Users size={18} />
+            <Users size={24} />
             <span>{t('👥 CRM', 'Guests')}</span>
           </button>
+          <Link
+            to="/manager-insights"
+            className="px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 text-white/60 hover:text-white"
+          >
+            <TrendingUp size={24} />
+            <span>{t('📈 Insights', 'Insights')}</span>
+          </Link>
           <button
             onClick={() => setActiveTab('payments')}
             className={cn(
-              "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
+              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
               activeTab === 'payments' 
-                ? "bg-gold text-navy shadow-2xl scale-105" 
-                : "text-white/50 hover:text-white"
+                ? "bg-gold text-navy shadow-2xl scale-110" 
+                : "text-white/60 hover:text-white"
             )}
           >
-            <DollarSign size={18} />
+            <DollarSign size={24} />
             <span>{t('💰 Sales', 'Revenue')}</span>
           </button>
           {(accessLevel === 'owner' || accessLevel === 'admin') && (
@@ -1169,49 +1335,46 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
 
                       {assignedStaff && (
                         <div className="pt-4 border-t border-slate-700/50 space-y-4 flex-1 flex flex-col justify-between">
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Therapist</span>
-                              <span className="text-sm font-bold text-primary">{assignedStaff.therapistName}</span>
+                              <span className="text-sm text-slate-500 font-black uppercase tracking-widest">{t('Therapist', 'Therapist')}</span>
+                              <span className="text-2xl font-black text-primary leading-none tracking-wide">{assignedStaff.therapistName}</span>
                             </div>
                             {assignedStaff.status === 'Working' && assignedStaff.remainingSeconds && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Time Left</span>
-                                <span className="text-sm font-mono font-bold text-orange-400">
+                              <div className="flex justify-between items-center bg-orange-500/10 px-4 py-2 rounded-xl">
+                                <span className="text-xs text-orange-400 font-bold uppercase">{t('Time Left', 'Time Left')}</span>
+                                <span className="text-2xl font-mono font-black text-orange-400">
                                   {Math.floor(assignedStaff.remainingSeconds / 60)}:{(assignedStaff.remainingSeconds % 60).toString().padStart(2, '0')}
                                 </span>
                               </div>
                             )}
                           </div>
 
-                          {/* Direct Action Buttons for iPad POS Efficiency */}
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {assignedStaff.status === 'PaymentPending' && bed.paymentStatus === 'Unpaid' && (
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setPaymentSession(assignedStaff);
                                 }}
-                                className="w-full py-3 bg-orange-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest text-center shadow-lg shadow-orange-900/20 active:scale-95 transition-transform"
+                                className="w-full py-5 bg-orange-500 text-white rounded-2xl text-xl font-black uppercase tracking-widest text-center shadow-xl shadow-orange-900/40 active:scale-95 transition-all border-b-4 border-orange-700"
                               >
-                                {t('เก็บเงิน / Collect', 'Collect Payment')}
+                                {t('เก็บเงิน / Collect', 'Collect')}
                               </button>
                             )}
                             {bed.paymentStatus === 'Paid' && (
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Trigger print for this specific session
                                   const sale = salesLog.find(s => s.bedNumber === bed.number && s.type === 'SALE');
                                   if (sale) {
-                                    // Logic to re-print
                                     console.log('Re-printing receipt for bed', bed.number);
                                   }
                                 }}
-                                className="w-full py-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-2"
+                                className="w-full py-5 bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/30 rounded-2xl text-xl font-black uppercase tracking-widest text-center flex items-center justify-center gap-3 active:scale-95 transition-all"
                               >
-                                <Receipt size={14} />
-                                {t('พิมพ์ใบเสร็จ / Print', 'Print Receipt')}
+                                <Receipt size={24} />
+                                {t('พิมพ์ / Print', 'Print')}
                               </button>
                             )}
                           </div>
@@ -1246,7 +1409,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   </div>
                 </div>
 
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                <div className="flex gap-8 overflow-x-auto pb-8 no-scrollbar">
                   {staff
                     .sort((a, b) => {
                       const isAvailable = (s: StaffStatus) => s.status === 'Available';
@@ -1277,15 +1440,15 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className={cn(
-                          "flex-shrink-0 flex flex-col items-center gap-3 px-8 py-6 rounded-[2rem] border-2 transition-all min-w-[160px]",
-                          s.status === 'Available' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10" :
-                          s.status === 'Working' ? "bg-orange-500/10 border-orange-500/20 text-orange-400 shadow-lg shadow-orange-500/10" :
-                          s.status === 'PaymentPending' ? "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse border-dashed" :
-                          "bg-red-500/10 border-red-500/20 text-red-400"
+                          "flex-shrink-0 flex flex-col items-center gap-4 px-10 py-8 rounded-[3rem] border-4 transition-all min-w-[200px] shadow-2xl",
+                          s.status === 'Available' ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-emerald-500/10" :
+                          s.status === 'Working' ? "bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-orange-500/10" :
+                          s.status === 'PaymentPending' ? "bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse border-dashed" :
+                          "bg-red-500/10 border-red-500/30 text-red-400"
                         )}
                       >
                         <div className={cn(
-                          "w-12 h-12 rounded-full flex items-center justify-center border text-lg font-black",
+                          "w-16 h-16 rounded-full flex items-center justify-center border-4 text-2xl font-black shadow-lg",
                           s.status === 'Available' ? "bg-emerald-500 text-white border-emerald-400" :
                           s.status === 'Working' ? "bg-orange-500 text-white border-orange-400" :
                           s.status === 'PaymentPending' ? "bg-amber-500 text-white border-amber-400" :
@@ -1293,16 +1456,16 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                         )}>
                           {index + 1}
                         </div>
-                        <span className="font-bold text-lg">{s.therapistName}</span>
-                        <div className="flex items-center gap-2">
+                        <span className="font-black text-2xl tracking-wide">{s.therapistName}</span>
+                        <div className="flex items-center gap-3">
                           <div className={cn(
-                            "w-2 h-2 rounded-full",
+                            "w-4 h-4 rounded-full shadow-inner",
                             s.status === 'Available' ? "bg-emerald-500 animate-pulse" :
                             s.status === 'Working' ? "bg-orange-500 animate-spin-slow" :
                             s.status === 'PaymentPending' ? "bg-amber-500 animate-ping" :
                             "bg-red-500"
                           )} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">
+                          <span className="text-lg font-black uppercase tracking-[0.2em] leading-none opacity-90">
                             {s.status === 'Available' ? t('ว่าง', 'Available') : 
                              s.status === 'Working' ? t('ทำงาน', 'Working') :
                              s.status === 'PaymentPending' ? t('รอจ่าย', 'Unpaid') :
@@ -1318,52 +1481,132 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
         )}
 
         {activeTab === 'payments' && (
-          <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in-95">
-            <div className="bg-slate-900/80 p-10 rounded-[3rem] border border-slate-800/50 shadow-2xl backdrop-blur-md text-center space-y-6">
-              <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center text-primary mx-auto border border-primary/30">
-                <TrendingUp size={40} />
+          <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in zoom-in-95">
+            <div className="bg-slate-900/80 p-16 rounded-[4rem] border-2 border-slate-800/50 shadow-2xl backdrop-blur-xl text-center space-y-10">
+              <div className="w-24 h-24 bg-primary/20 rounded-[2rem] flex items-center justify-center text-primary mx-auto border-2 border-primary/30 shadow-xl">
+                <TrendingUp size={48} />
               </div>
-              <h2 className="text-3xl font-serif font-bold text-white">{t('สรุปยอดขายวันนี้', 'Today\'s Sales Summary')}</h2>
+              <h2 className="text-5xl font-serif font-black text-white italic tracking-tight leading-relaxed">{t('สรุปยอดขายวันนี้', 'Today\'s Sales Summary')}</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Total Sales</p>
-                  <p className="text-3xl font-black text-white">{formatCurrency(salesLog.reduce((acc, s) => acc + s.amount, 0))}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-slate-800/60 p-10 rounded-[3rem] border-2 border-slate-700 shadow-inner group hover:border-primary/40 transition-all">
+                  <p className="text-slate-400 text-sm font-black uppercase tracking-[0.4em] mb-4">Total Sales</p>
+                  <p className="text-6xl md:text-7xl font-black text-primary drop-shadow-2xl tracking-tighter">{formatCurrency(salesLog.reduce((acc, s) => acc + s.amount, 0))}</p>
                 </div>
-                <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Transactions</p>
-                  <p className="text-3xl font-black text-white">{salesLog.length}</p>
+                <div className="bg-slate-800/60 p-10 rounded-[3rem] border-2 border-slate-700 shadow-inner group hover:border-primary/40 transition-all">
+                  <p className="text-slate-400 text-sm font-black uppercase tracking-[0.4em] mb-4">Transactions</p>
+                  <p className="text-6xl font-black text-white">{salesLog.length}</p>
                 </div>
-                <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Average Bill</p>
-                  <p className="text-3xl font-black text-white">
+                <div className="bg-slate-800/60 p-10 rounded-[3rem] border-2 border-slate-700 shadow-inner group hover:border-primary/40 transition-all">
+                  <p className="text-slate-400 text-sm font-black uppercase tracking-[0.4em] mb-4">Average Bill</p>
+                  <p className="text-5xl font-black text-white">
                     {formatCurrency(salesLog.length > 0 ? (salesLog.reduce((acc, s) => acc + s.amount, 0) / salesLog.length) : 0)}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-slate-800">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-serif font-bold text-white">{t('รายการล่าสุด', 'Recent Transactions')}</h3>
-                  <button className="text-primary text-xs font-bold hover:underline">View All Report</button>
+              <div className="pt-12 border-t border-slate-800/50">
+                <div className="flex justify-between items-center mb-10">
+                  <h3 className="text-4xl font-serif font-black text-white italic">{t('รายการล่าสุด (ภายในแอป)', 'Recent App Sessions')}</h3>
+                  <button 
+                    onClick={() => checkAuthorization(generateMonthlySummary)}
+                    disabled={isSummaryLoading}
+                    className="bg-primary text-navy px-12 py-6 rounded-[2.5rem] text-2xl font-black uppercase tracking-[0.1em] hover:scale-105 transition-all flex items-center gap-4 shadow-2xl shadow-primary/30"
+                  >
+                    {isSummaryLoading ? (
+                      <Timer className="animate-spin" size={32} />
+                    ) : (
+                      <FileText size={32} />
+                    )}
+                    {t('สรุปยอดรายเดือน', 'Monthly Summary')}
+                  </button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {salesLog.slice(-5).reverse().map((sale, i) => (
-                    <div key={i} className="flex justify-between items-center bg-slate-800/30 p-4 rounded-xl border border-slate-800">
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-white">{sale.customer}</p>
-                        <p className="text-[10px] text-slate-500">{sale.service} • {sale.method}</p>
+                    <div key={i} className="flex justify-between items-center bg-slate-800/40 p-8 rounded-[2.5rem] border-2 border-slate-800 transition-all hover:bg-slate-800/60">
+                      <div className="text-left space-y-2">
+                        <p className="text-2xl font-black text-white leading-[1.8] tracking-wide">{sale.customer}</p>
+                        <p className="text-lg text-slate-400 font-medium leading-[1.8]">{sale.service} • {sale.method}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-black text-primary">{formatCurrency(sale.amount)}</p>
-                        <p className="text-[8px] text-slate-500">{new Date(sale.timestamp).toLocaleTimeString()}</p>
+                      <div className="text-right space-y-2">
+                        <p className="text-3xl font-black text-primary">{formatCurrency(sale.amount)}</p>
+                        <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">{new Date(sale.timestamp).toLocaleTimeString()}</p>
                       </div>
                     </div>
                   ))}
                   {salesLog.length === 0 && (
-                    <p className="text-slate-500 text-sm italic py-10">{t('ยังไม่มีรายการขายในวันนี้ค่ะ', 'No sales recorded yet today.')}</p>
+                    <div className="py-24 text-center bg-slate-800/20 rounded-[3rem] border-2 border-dashed border-slate-800">
+                      <p className="text-slate-500 text-2xl font-serif italic">{t('ยังไม่มีรายการขายในเซสชันนี้ค่ะ', 'No sales in this session yet.')}</p>
+                    </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Receipt History Center (New Section) */}
+            <div className="bg-slate-900/80 p-12 rounded-[4rem] border-2 border-slate-800/50 shadow-2xl backdrop-blur-xl space-y-10">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-white/5 pb-10 gap-6">
+                <div>
+                  <h2 className="text-5xl font-serif font-black text-white flex items-center gap-4 italic tracking-tight">
+                    <Receipt className="text-gold" size={48} />
+                    {t('คลังประวัติใบเสร็จ', 'Receipt History Center')}
+                  </h2>
+                  <p className="text-slate-400 text-xl font-medium mt-3 leading-[1.8]">{t('ดึงข้อมูลจากระบบ Google Sheet ทั้งหมดเพื่อออกใบเสร็จย้อนหลัง', 'Reprint/Generate receipts from all historical bookings.')}</p>
+                </div>
+                <button 
+                  onClick={loadBookingHistory}
+                  disabled={isHistoryLoading}
+                  className="w-full md:w-auto px-12 py-6 bg-white/5 hover:bg-white/10 text-white rounded-[2rem] text-xl font-black uppercase tracking-[0.2em] border-2 border-white/10 transition-all flex items-center justify-center gap-4 active:scale-95"
+                >
+                  <Clock className={isHistoryLoading ? 'animate-spin' : ''} size={24} />
+                  {isHistoryLoading ? 'Loading...' : t('Refresh History', 'Refresh')}
+                </button>
+              </div>
+
+              <div className="max-h-[600px] overflow-y-auto pr-4 custom-scrollbar space-y-6">
+                {historyBookings.length > 0 ? (
+                  historyBookings.map((booking, idx) => (
+                    <div 
+                      key={idx} 
+                      className="group flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-800/40 p-10 rounded-[3rem] border-2 border-white/5 hover:border-gold/50 hover:bg-gold/5 transition-all gap-8 shadow-xl"
+                    >
+                      <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 rounded-[1.5rem] bg-gold/10 flex items-center justify-center text-gold border-2 border-gold/20 shadow-inner">
+                          <User size={32} />
+                        </div>
+                        <div className="text-left space-y-2">
+                          <p className="text-2xl font-black text-white group-hover:text-gold transition-colors leading-[1.8] tracking-wide">{booking.customerName}</p>
+                          <p className="text-lg text-slate-400 font-medium leading-[1.8]">
+                            {booking.date.toLocaleDateString('en-AU')} • <span className="font-bold text-slate-300">{booking.therapistName}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-10 w-full md:w-auto justify-between md:justify-end border-t-2 md:border-t-0 border-white/5 pt-8 md:pt-0">
+                        <div className="text-left md:text-right space-y-1">
+                          <p className="text-4xl font-black text-white tracking-tighter">{formatCurrency(booking.amount)}</p>
+                          <p className="text-xs text-slate-500 font-black uppercase tracking-[0.4em]">{booking.paymentMethod}</p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setSelectedHistoryBooking(booking);
+                            setShowHistoryReceipt(true);
+                          }}
+                          className="bg-primary/20 hover:bg-primary text-primary hover:text-navy px-10 py-5 rounded-[2rem] border-2 border-primary/40 transition-all shadow-xl flex items-center gap-3 group/btn active:scale-95"
+                        >
+                          <Receipt size={24} className="group-hover/btn:scale-110 transition-transform" />
+                          <span className="text-xl font-black uppercase tracking-[0.1em]">{t('Receipt', 'Receipt')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-24 text-center bg-slate-800/10 rounded-[4rem] border-2 border-dashed border-slate-800 space-y-6">
+                    <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center text-slate-600 mx-auto shadow-inner">
+                      <FileText size={48} />
+                    </div>
+                    <p className="text-slate-500 text-2xl font-serif italic">{isHistoryLoading ? t('กำลังโหลดประวัติ...', 'Loading history...') : t('ไม่พบข้อมูลประวัติใบเสร็จค่ะ', 'No historical records found.')}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1535,7 +1778,82 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
         )}
       </AnimatePresence>
 
-      {/* Quick Add Modal */}
+      {/* Monthly Summary Modal */}
+      <AnimatePresence>
+        {showSummaryModal && monthlySummary && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSummaryModal(false)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-slate-900 rounded-[3rem] border border-slate-700 shadow-2xl overflow-hidden"
+            >
+              <div className="p-10 space-y-8">
+                <div className="text-center space-y-2">
+                  <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center text-primary mx-auto mb-4 border border-primary/30">
+                    <PiggyBank size={40} />
+                  </div>
+                  <h3 className="text-4xl md:text-5xl font-serif font-black text-white leading-relaxed">{t('สรุปยอดส่งบัญชี', 'Accounting Summary')}</h3>
+                  <p className="text-slate-400 text-xl font-medium">{monthlySummary.month}</p>
+                </div>
+
+                <div className="space-y-6 bg-slate-800/30 p-10 rounded-[3rem] border-2 border-slate-700 shadow-inner">
+                  <div className="flex justify-between items-center py-4 border-b border-white/10">
+                    <span className="text-slate-300 text-xl font-medium leading-[1.8]">{t('จำนวนคิวจอง', 'Total Bookings')}</span>
+                    <span className="text-white text-3xl font-black">{monthlySummary.count}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-6 border-b border-white/10">
+                    <span className="text-slate-300 text-xl font-medium leading-[1.8]">{t('รายได้รวม (Gross)', 'Total Revenue')}</span>
+                    <span className="text-primary text-6xl md:text-7xl font-black tracking-tighter drop-shadow-lg">{formatCurrency(monthlySummary.totalRevenue)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-4 border-b border-white/10">
+                    <span className="text-slate-300 text-xl font-medium leading-[1.8]">{t('ภาษี GST (10%)', 'GST (10%)')}</span>
+                    <span className="text-emerald-400 text-3xl font-bold">{formatCurrency(monthlySummary.gst)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-4">
+                    <span className="text-slate-300 text-xl font-medium leading-[1.8]">{t('ค่าบริการระบบ (GP %)', 'Platform Fee')}</span>
+                    <span className="text-rose-400 text-3xl font-bold">-{formatCurrency(monthlySummary.gpAmount)}</span>
+                  </div>
+                </div>
+
+                <div className="bg-primary/10 border-2 border-primary/30 p-8 rounded-[2.5rem] shadow-lg">
+                  <div className="flex items-center gap-3 text-primary mb-4">
+                    <Sparkles size={24} />
+                    <span className="text-sm font-black uppercase tracking-[0.3em]">{t('Nong Som\'s Note', 'Smart Advice')}</span>
+                  </div>
+                  <p className="text-lg md:text-xl text-primary font-semibold italic leading-[1.8] tracking-wide">
+                    {t('คุณป้าคะ น้องส้มช่วยแยกยอดภาษีกับค่า GP ไว้ให้เรียบร้อยแล้วค่ะ นักบัญชีชอบแน่นอน! กดบันทึกเพื่อเก็บเข้า Sheet Performance ได้เลยนะคะ 🍊', 'Auntie, I\'ve separated the tax and GP fees for you. Your accountant will love it! Click confirm to save to Performance Summary. 🍊')}
+                  </p>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-6">
+                  <button 
+                    onClick={() => setShowSummaryModal(false)}
+                    className="flex-1 py-8 rounded-[2.5rem] bg-slate-800 text-white text-xl font-black uppercase tracking-[0.2em] border-2 border-slate-700 hover:bg-slate-700 transition-all active:scale-95"
+                  >
+                    {t('ยกเลิก', 'Cancel')}
+                  </button>
+                  <button 
+                    onClick={handleSaveSummary}
+                    disabled={isSummaryLoading}
+                    className="flex-[2] py-8 rounded-[2.5rem] bg-primary text-navy text-2xl font-black uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-2xl shadow-primary/40 disabled:opacity-50 active:scale-95 border-b-8 border-primary-dark"
+                  >
+                    {isSummaryLoading ? t('กำลังบันทึก...', 'Saving...') : t('สรุปยอดส่งบัญชี', 'Save & Send')}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isQuickAddOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -1552,20 +1870,20 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="relative w-full max-w-lg bg-slate-900 rounded-[3rem] border border-slate-700 shadow-2xl overflow-hidden"
             >
-              <div className="p-10 space-y-8">
+              <div className="p-12 space-y-10">
                 <div className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <h3 className="text-3xl font-serif font-bold text-white">{t('Walk-in / รับลูกค้า', 'Walk-in')}</h3>
-                    <p className="text-slate-500 text-sm">{t('ใส่ข้อมูลลูกค้าเพื่อเริ่มงานทันทีนะคะ', 'Enter customer info to start session.')}</p>
+                  <div className="space-y-3">
+                    <h3 className="text-5xl font-serif font-black text-white italic tracking-tight">{t('Walk-in / รับลูกค้า', 'Walk-in')}</h3>
+                    <p className="text-slate-400 text-xl font-medium leading-[1.8]">{t('ใส่ข้อมูลลูกค้าเพื่อเริ่มงานทันทีนะคะ', 'Enter customer info to start session.')}</p>
                   </div>
-                  <button onClick={() => setIsQuickAddOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                    <X size={28} />
+                  <button onClick={() => setIsQuickAddOpen(false)} className="w-16 h-16 rounded-[1.5rem] bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors border-2 border-slate-700">
+                    <X size={32} />
                   </button>
                 </div>
 
-                <form onSubmit={handleQuickAdd} className="space-y-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Customer Name</label>
+                <form onSubmit={handleQuickAdd} className="space-y-10">
+                  <div className="space-y-4">
+                    <label className="text-sm uppercase font-black text-slate-500 tracking-[0.4em]">Customer Name</label>
                     <input 
                       type="text"
                       value={newWalkIn.customerName}
@@ -1575,47 +1893,47 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                       }}
                       placeholder="Enter Name"
                       className={cn(
-                        "w-full bg-slate-800 border-2 rounded-2xl px-6 py-5 text-xl text-white focus:border-primary outline-none transition-all",
+                        "w-full bg-slate-800 border-4 rounded-[2rem] px-10 py-8 text-3xl text-white focus:border-primary outline-none transition-all shadow-inner",
                         formError ? "border-red-500/50" : "border-slate-700"
                       )}
                     />
-                    {formError && <p className="text-red-400 text-xs font-medium">{formError}</p>}
+                    {formError && <p className="text-red-400 text-xl font-bold leading-[1.8]">{formError}</p>}
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Select Service</label>
-                    <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-4">
+                    <label className="text-sm uppercase font-black text-slate-500 tracking-[0.4em]">Select Service</label>
+                    <div className="grid grid-cols-1 gap-4 max-h-60 overflow-y-auto pr-4 custom-scrollbar">
                       {services.map(s => (
                         <button
                           key={s.id}
                           type="button"
                           onClick={() => setNewWalkIn(prev => ({ ...prev, serviceId: s.id }))}
                           className={cn(
-                            "p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center",
+                            "p-6 rounded-[1.5rem] border-2 text-left transition-all flex justify-between items-center group",
                             newWalkIn.serviceId === s.id 
                               ? "bg-primary/20 border-primary text-white" 
-                              : "bg-slate-800 border-slate-700 text-slate-400"
+                              : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
                           )}
                         >
-                          <span className="font-bold">{s.name}</span>
-                          <span className="text-xs opacity-60">{formatCurrency(s.standardPrice)}</span>
+                          <span className="text-2xl font-black leading-[1.6] group-hover:text-primary transition-colors">{t(s.name, s.englishName)}</span>
+                          <span className="text-xl font-black text-slate-300">{formatCurrency(s.standardPrice)}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">{t('เลือกพนักงาน / Therapist', 'Therapist')}</label>
-                      <div className="flex items-center gap-2 text-orange-500 animate-pulse">
-                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px]">🍊</div>
-                        <span className="text-[9px] font-bold italic">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-end gap-10">
+                      <label className="text-sm uppercase font-black text-slate-500 tracking-[0.4em] mb-2">{t('เลือกพนักงาน / Therapist', 'Therapist')}</label>
+                      <div className="flex items-center gap-3 text-orange-500 animate-pulse bg-orange-500/5 px-4 py-2 rounded-full border border-orange-500/10">
+                        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-lg">🍊</div>
+                        <span className="text-xs font-black italic tracking-wider">
                           {t('พี่ๆ คะ... น้องส้มแนะนำคนว่างคิวแรกให้แล้วนะคะ! 🍊', 'Tip: Nong Som recommends the first available staff! 🍊')}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2 no-scrollbar p-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-4 no-scrollbar p-2">
                       {staff
                         .filter(s => s.status === 'Available')
                         .sort((a, b) => new Date(a.lastAvailableAt || 0).getTime() - new Date(b.lastAvailableAt || 0).getTime())
@@ -1630,44 +1948,44 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                               type="button"
                               onClick={() => setNewWalkIn(prev => ({ ...prev, therapistId: s.therapistId }))}
                               className={cn(
-                                "relative p-4 rounded-2xl border-2 text-left transition-all group",
+                                "relative p-8 rounded-[2rem] border-2 text-left transition-all group",
                                 newWalkIn.therapistId === s.therapistId 
-                                  ? "bg-primary/20 border-primary shadow-[0_0_20px_rgba(184,150,46,0.2)]" 
+                                  ? "bg-primary/20 border-primary shadow-2xl" 
                                   : isNextAvailable 
                                     ? "bg-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50"
                                     : "bg-slate-800 border-slate-700 hover:border-slate-600"
                               )}
                             >
                               {isNextAvailable && (
-                                <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black px-2 py-1 rounded-full shadow-lg z-10 animate-bounce flex items-center gap-1">
-                                  <Star size={8} fill="currentColor" />
+                                <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-2xl z-10 animate-bounce flex items-center gap-2 border-2 border-white/20">
+                                  <Star size={10} fill="currentColor" />
                                   NEXT AVAILABLE
                                 </div>
                               )}
                               
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center text-slate-500 border border-slate-600 overflow-hidden relative">
+                              <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 rounded-[1.2rem] bg-slate-700 flex items-center justify-center text-slate-500 border-2 border-slate-600 overflow-hidden relative shadow-inner">
                                   {therapistData?.imageUrl ? (
                                     <img src={therapistData.imageUrl} alt={s.therapistName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                   ) : (
-                                    <User size={20} />
+                                    <User size={32} />
                                   )}
-                                  <div className="absolute bottom-0 right-0 bg-slate-900/80 p-0.5 rounded-tl-lg">
-                                    <span className="text-[8px]">
+                                  <div className="absolute bottom-0 right-0 bg-slate-900/80 p-1 rounded-tl-xl">
+                                    <span className="text-xs">
                                       {s.gender === 'Male' ? '👨' : s.gender === 'Female' ? '👩' : '⚧️'}
                                     </span>
                                   </div>
                                 </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-white">{s.therapistName}</span>
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xl font-black text-white group-hover:text-primary transition-colors">{s.therapistName}</span>
                                     {insStatus.status !== 'valid' && (
-                                      <span className="text-[8px] text-red-400 font-black">⚠️</span>
+                                      <span className="text-lg text-red-400 font-black animate-pulse">⚠️</span>
                                     )}
                                   </div>
-                                  <div className="flex flex-wrap gap-1 mt-1">
+                                  <div className="flex flex-wrap gap-2">
                                     {therapistData?.specialties.slice(0, 2).map((spec, i) => (
-                                      <span key={i} className="text-[7px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 font-bold uppercase tracking-tighter border border-slate-700">
+                                      <span key={i} className="text-[9px] px-2 py-0.5 rounded bg-slate-900 text-slate-400 font-black uppercase tracking-tighter border border-slate-700">
                                         {spec}
                                       </span>
                                     ))}
@@ -1680,18 +1998,18 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Bed Number / เลือกเตียง</label>
-                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                  <div className="space-y-4">
+                    <label className="text-sm uppercase font-black text-slate-500 tracking-[0.4em]">Bed Number / เลือกเตียง</label>
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
                       {beds.filter(b => b.status === 'Vacant').map(b => (
                         <button
                           key={b.id}
                           type="button"
                           onClick={() => setNewWalkIn(prev => ({ ...prev, bedId: b.id }))}
                           className={cn(
-                            "py-3 rounded-xl border-2 font-bold text-sm transition-all",
+                            "py-6 rounded-[1.5rem] border-2 font-black text-2xl transition-all shadow-md active:scale-90",
                             newWalkIn.bedId === b.id 
-                              ? "bg-primary/20 border-primary text-white" 
+                              ? "bg-primary/20 border-primary text-white shadow-xl" 
                               : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
                           )}
                         >
@@ -1701,32 +2019,32 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Health Fund (Optional)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="space-y-3">
+                      <label className="text-xs uppercase font-black text-slate-500 tracking-[0.4em]">Health Fund (Optional)</label>
                       <input 
                         type="text"
                         value={(newWalkIn as any).healthFund || ''}
                         onChange={(e) => setNewWalkIn(prev => ({ ...prev, healthFund: e.target.value }))}
                         placeholder="e.g. BUPA, Medibank"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-primary outline-none"
+                        className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-5 text-xl text-white focus:border-primary outline-none shadow-inner"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Member ID (Optional)</label>
+                    <div className="space-y-3">
+                      <label className="text-xs uppercase font-black text-slate-500 tracking-[0.4em]">Member ID (Optional)</label>
                       <input 
                         type="text"
                         value={(newWalkIn as any).memberId || ''}
                         onChange={(e) => setNewWalkIn(prev => ({ ...prev, memberId: e.target.value }))}
                         placeholder="Member Number"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-primary outline-none"
+                        className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-5 text-xl text-white focus:border-primary outline-none shadow-inner"
                       />
                     </div>
                   </div>
 
                   <button 
                     type="submit"
-                    className="w-full py-6 gold-gradient text-white rounded-2xl font-bold text-xl shadow-2xl hover:opacity-90 transition-opacity uppercase tracking-[0.2em]"
+                    className="w-full py-10 gold-gradient text-white rounded-[2.5rem] font-black text-3xl shadow-2xl hover:opacity-90 transition-all uppercase tracking-[0.3em] active:scale-95 border-b-8 border-primary-dark"
                   >
                     เริ่มงาน / Start Session
                   </button>
@@ -1780,26 +2098,26 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   </p>
                 </div>
 
-                <div className="bg-slate-800/50 rounded-[2.5rem] p-8 border border-slate-700/50 space-y-6">
-                  <div className="flex justify-between items-center pb-6 border-b border-slate-700">
+                <div className="bg-slate-800/50 rounded-[3.5rem] p-12 border-2 border-slate-700/50 space-y-8 shadow-inner">
+                  <div className="flex justify-between items-center pb-8 border-b-2 border-slate-700/50">
                     <div>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('ลูกค้า / Customer', 'Customer')}</p>
-                      <p className="text-2xl font-bold text-white font-sans">{paymentSession.currentCustomer}</p>
+                      <p className="text-sm text-slate-400 uppercase font-bold tracking-[0.4em] mb-2">{t('ลูกค้า / Customer', 'Customer')}</p>
+                      <p className="text-4xl font-black text-white font-sans leading-[1.6]">{paymentSession.currentCustomer}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('บริการ / Service', 'Service')}</p>
-                      <p className="text-xl font-bold text-slate-300 font-sans">{paymentSession.currentService}</p>
+                      <p className="text-sm text-slate-400 uppercase font-bold tracking-[0.4em] mb-2">{t('บริการ / Service', 'Service')}</p>
+                      <p className="text-3xl font-bold text-slate-300 font-sans leading-[1.6]">{paymentSession.currentService}</p>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('ระยะเวลา / Duration', 'Duration')}</p>
-                      <p className="text-xl font-medium text-slate-400 font-sans">{paymentSession.remainingSeconds ? 'Active' : '60 mins'}</p>
+                      <p className="text-sm text-slate-400 uppercase font-bold tracking-[0.4em] mb-2">{t('ระยะเวลา / Duration', 'Duration')}</p>
+                      <p className="text-2xl font-medium text-slate-400 font-sans">{paymentSession.remainingSeconds ? 'Active' : '60 mins'}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('ยอดรวม / Total', 'Total')}</p>
-                      <p className="text-5xl font-black text-primary font-sans">{formatCurrency(paymentSession.currentPrice || 0)}</p>
+                      <p className="text-sm text-slate-400 uppercase font-bold tracking-[0.4em] mb-2">{t('ยอดรวม / Total', 'Total')}</p>
+                      <p className="text-7xl font-black text-primary font-sans drop-shadow-xl tracking-tighter">{formatCurrency(paymentSession.currentPrice || 0)}</p>
                     </div>
                   </div>
                 </div>
@@ -2238,60 +2556,279 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                 </motion.div>
 
                 {/* Digital Receipt QR */}
-                <div className="bg-navy p-6 rounded-[2.5rem] text-white space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <div className="bg-navy p-6 rounded-[2.5rem] text-white space-y-4 border border-white/10 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+                  
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-primary">
                       <QrCode size={20} />
                     </div>
                     <div className="text-left">
-                      <div className="text-xs font-black uppercase tracking-widest">{t('ใบเสร็จดิจิทัล', 'Digital Receipt')}</div>
-                      <div className="text-[10px] text-white/50">{t('สแกนเพื่อโหลด Health Fund Claim', 'Scan for Health Fund Claim')}</div>
+                      <div className="text-xs font-black uppercase tracking-widest">{t('สแกนรับใบเสร็จดิจิทัล', 'Digital Receipt QR')}</div>
+                      <div className="text-[10px] text-white/50">{t('ใช้สำหรับเคลมประกันสุขภาพได้ทันที', 'Scan for Instant Insurance Claim')}</div>
                     </div>
                   </div>
                   
-                  <div className="bg-white p-3 rounded-2xl inline-block shadow-lg">
+                  <div className="bg-white p-4 rounded-3xl inline-block shadow-2xl relative z-10">
                     <QRCodeSVG 
-                      value={`https://receipts.ais-v5.app/${paymentSession.therapistId}/${Date.now()}`} 
-                      size={120} 
+                      value={`https://melbooking.com/claim?customer=${encodeURIComponent(paymentSession.currentCustomer || 'Guest')}&service=${encodeURIComponent(paymentSession.currentService || 'Massage')}&amount=${paymentSession.currentPrice || 0}&provider=${paymentSession.providerNumber || ''}&date=${new Date().toISOString().split('T')[0]}&shop=${encodeURIComponent(storeConfig.storeName)}`} 
+                      size={160}
+                      level="H"
+                      includeMargin={true}
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 justify-center pt-2">
-                    <ShieldCheck size={14} className="text-emerald-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Certified Health Fund Provider</span>
+                  <div className="space-y-2 relative z-10">
+                    <p className="text-[11px] text-primary font-bold italic leading-tight">
+                      " {t('สแกนรับใบเสร็จสำหรับเคลมประกันได้ที่นี่ค่ะ', 'Scan here to receive your digital receipt for insurance claims.')} "
+                    </p>
+                    <div className="flex items-center gap-2 justify-center pt-1">
+                      <ShieldCheck size={14} className="text-emerald-400" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Verified Provider #{paymentSession.providerNumber || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => {
+                        window.print();
+                    }}
+                    className="py-4 bg-navy text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-navy/20 border border-white/10"
+                  >
+                    <Download size={18} />
+                    {t('Generate PDF', 'Export PDF')}
+                  </button>
+                  <button 
+                    onClick={() => {
+                        setSomMessage(t('ส่งใบเสร็จไปที่อีเมล {email} สำเร็จแล้วค่ะ! 🍊', `Receipt sent to email! 🍊`).replace('{email}', paymentSession.currentCustomer || 'Customer'));
+                    }}
+                    className="py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                  >
+                    <Bell size={18} />
+                    {t('Email', 'Send to Email')}
+                  </button>
+                </div>
+                <div className="flex gap-4">
                   {settings.enableThermalPrinting && enablePrinting && (
                     <button 
                       onClick={handlePrint}
-                      className="py-4 bg-navy text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-navy/20 border border-white/10"
+                      className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
                     >
-                      <Receipt size={18} />
-                      {t('พิมพ์ใบเสร็จ', 'Print thermal')}
+                      <Receipt size={14} />
+                      {t('Thermal Print', 'Print Thermal')}
                     </button>
                   )}
                   <button 
-                    onClick={() => {
-                        setSomMessage(t('กำลังเตรียมไฟล์ PDF และส่งเข้าอีเมลลูกค้าอัตโนมัติแล้วค่ะพี่ 🍊 (Smart Claim Active)', 'Preparing PDF and sending to customer email automatically... 🍊 (Smart Claim Active)'));
-                    }}
-                    className="py-4 bg-gold text-navy rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-gold/20"
+                    onClick={closeReceipt}
+                    className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg"
                   >
-                    <Download size={18} />
-                    {t('ส่งอีเมล (PDF)', 'Email PDF')}
+                    Done / เสร็จสิ้น
                   </button>
                 </div>
-                <button 
-                  onClick={closeReceipt}
-                  className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
-                >
-                  Done / เสร็จสิ้น
-                </button>
               </div>
             </motion.div>
           </div>
           </>
+        )}
+      </AnimatePresence>
+ 
+      {/* History Receipt Modal */}
+      <AnimatePresence>
+        {showPinLock && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/95 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm bg-slate-900 rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center"
+            >
+              <div className="w-20 h-20 bg-rose-500/20 rounded-3xl flex items-center justify-center text-rose-500 mx-auto mb-6 border border-rose-500/30">
+                <LockIcon size={40} className={pinError ? 'animate-shake' : ''} />
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-white mb-2">{t('ยืนยันรหัสผ่าน', 'Manager Authorization')}</h3>
+              <p className="text-slate-500 text-xs mb-8">{t('กรุณาใส่รหัสผ่านเพื่อเข้าถึงข้อมูลสรุปยอดรายเดือน (เฉพาะ Manager และ เจ้าของร้าน)', 'Please enter PIN to access monthly summaries.')}</p>
+              
+              <div className="flex justify-center gap-4 mb-8">
+                {[0, 1, 2, 3].map((i) => (
+                  <div 
+                    key={i}
+                    className={cn(
+                      "w-4 h-4 rounded-full border-2 transition-all duration-300",
+                      pinBuffer.length > i ? "bg-primary border-primary scale-125 shadow-lg shadow-primary/50" : "border-slate-700"
+                    )}
+                  />
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, 'OK'].map((num) => (
+                  <button
+                    key={num.toString()}
+                    onClick={() => {
+                      if (num === 'C') setPinBuffer('');
+                      else if (num === 'OK') handlePinSubmit();
+                      else if (typeof num === 'number' && pinBuffer.length < 4) {
+                        const newPin = pinBuffer + num;
+                        setPinBuffer(newPin);
+                        if (newPin.length === 4) {
+                          // Auto submit if needed, or wait for OK
+                        }
+                      }
+                    }}
+                    className={cn(
+                      "h-16 rounded-2xl flex items-center justify-center font-black text-xl transition-all active:scale-90",
+                      num === 'OK' ? "bg-primary text-navy col-span-1" : 
+                      num === 'C' ? "bg-slate-800 text-rose-400" : "bg-slate-800 text-white hover:bg-slate-700"
+                    )}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+              
+              <button 
+                onClick={() => setShowPinLock(false)}
+                className="mt-8 text-slate-500 text-xs font-bold hover:text-white transition-colors"
+              >
+                {t('ยกเลิก', 'Cancel')}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* History Receipt Modal */}
+      <AnimatePresence>
+        {showHistoryReceipt && selectedHistoryBooking && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistoryReceipt(false)}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden p-10"
+            >
+              <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-6 no-print">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center text-gold">
+                    <Receipt size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-serif font-bold text-navy">{t('ประวัติใบเสร็จ', 'History Receipt')}</h3>
+                    <p className="text-[10px] text-slate-400 -mt-1 uppercase tracking-widest font-black">Remedial Massage Clinic</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHistoryReceipt(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto pr-2 mb-8 bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
+                <PrintableReceipt 
+                  bookingData={{
+                    customerName: selectedHistoryBooking.customerName,
+                    serviceName: selectedHistoryBooking.serviceName,
+                    therapistName: selectedHistoryBooking.therapistName,
+                    providerNumber: selectedHistoryBooking.provider_number || selectedHistoryBooking.providerNo,
+                    amount: selectedHistoryBooking.amount,
+                    paymentMethod: selectedHistoryBooking.paymentMethod,
+                    healthFund: selectedHistoryBooking.health_fund || selectedHistoryBooking.healthFund,
+                    memberId: selectedHistoryBooking.member_id || selectedHistoryBooking.memberId,
+                    date: selectedHistoryBooking.date
+                  }}
+                />
+                
+                {/* Web Preview Card */}
+                <div className="bg-white p-8 shadow-sm border border-slate-200 rounded-2xl space-y-4 font-mono text-[11px] text-slate-800">
+                  <div className="text-center border-b-2 border-slate-100 pb-6">
+                    <h1 className="text-sm font-black uppercase text-navy tracking-tight">{storeConfig.storeName}</h1>
+                    <p className="text-[10px] text-slate-500 mt-1 italic">ABN: {storeConfig.abn}</p>
+                    <div className="mt-3 inline-block px-4 py-1 bg-slate-100 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">{t('ใบเสร็จรับเงิน (ย้อนหลัง)', 'Tax Invoice')}</div>
+                  </div>
+                  
+                  <div className="space-y-2 py-4">
+                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                      <span className="text-slate-400">Date:</span> 
+                      <span className="font-bold">{selectedHistoryBooking.date.toLocaleDateString('en-AU')}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                      <span className="text-slate-400">Client:</span> 
+                      <span className="font-bold text-navy">{selectedHistoryBooking.customerName}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                      <span className="text-slate-400">Therapist:</span> 
+                      <span className="font-bold">{selectedHistoryBooking.therapistName}</span>
+                    </div>
+                    {selectedHistoryBooking.provider_number && (
+                      <div className="flex justify-between border-b border-slate-50 pb-1 text-emerald-600">
+                        <span className="text-slate-400">Provider No:</span> 
+                        <span className="font-bold">{selectedHistoryBooking.provider_number}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t-2 border-slate-100 pt-4 space-y-3">
+                    <div className="flex justify-between font-bold text-navy text-sm">
+                      <span>{selectedHistoryBooking.serviceName}</span>
+                      <span>{formatCurrency(selectedHistoryBooking.amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>GST Included (1/11)</span>
+                      <span>{formatCurrency(selectedHistoryBooking.amount / 11)}</span>
+                    </div>
+                    <div className="flex justify-between text-xl font-black text-navy border-t-2 border-primary/20 pt-4 bg-primary/5 p-4 rounded-xl">
+                      <span>TOTAL PAID</span>
+                      <span>{formatCurrency(selectedHistoryBooking.amount)}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-center pt-8 text-[10px] text-slate-400">
+                    <p className="italic underline decoration-slate-200">Payment via {selectedHistoryBooking.paymentMethod}</p>
+                    <p className="mt-1 font-bold">REMEDIAL MASSAGE CLINIC RECEIPT</p>
+                    <p className="mt-1 text-[8px] opacity-40 uppercase tracking-widest tracking-[0.3em]">Certified Professional Record</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 no-print px-4">
+                <button 
+                  onClick={() => window.print()}
+                  className="flex-[2] py-5 rounded-[2rem] bg-navy text-white font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-navy/20 flex items-center justify-center gap-3"
+                >
+                  <Download size={20} />
+                  {t('Export PDF', 'Generate PDF')}
+                </button>
+                <button 
+                  onClick={() => {
+                    setSomMessage(t('ส่งใบเสร็จไปที่อีเมล {email} สำเร็จแล้วค่ะ! 🍊', `Receipt sent to email! 🍊`).replace('{email}', selectedHistoryBooking.customerName));
+                  }}
+                  className="flex-1 py-5 rounded-[2rem] bg-emerald-500 text-white font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+                >
+                  <Bell size={20} />
+                  {t('Email', 'Email')}
+                </button>
+                <button 
+                  onClick={() => setShowHistoryReceipt(false)}
+                  className="flex-1 py-5 rounded-[2rem] bg-slate-100 text-slate-500 font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  {t('Cancel', 'Cancel')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

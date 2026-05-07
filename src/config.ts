@@ -32,9 +32,9 @@ export const INITIAL_BEDS: Bed[] = [
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
-  clientName: 'Chapter99 Solutions',
-  storeId: 'MIRA-SYD-001',
-  googleSheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+  clientName: 'Premium Thai Wellness',
+  storeId: 'PREMIUM-SYD-001',
+  googleSheetId: '1_JJv-Z3NKqr84utwKZDFayBkJQ6RkVElicEV7zSLFMs',
   gpFeePercent: 0.5,
   showPosMode: true,
   showDailySummary: true,
@@ -53,18 +53,18 @@ const DEFAULT_SETTINGS: AppSettings = {
   masterPin: '3501',
   brandLogoUrl: '',
   heroVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-massage-therapist-working-on-a-client-4444-large.mp4',
-  heroImageUrl: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=2070&auto=format&fit=crop',
-  shopDescription: 'Experience True Serenity - Premium Wellness in Altona',
+  heroImageUrl: '',
+  shopDescription: 'Premium Thai Wellness - Your Ultimate Escape for Body and Soul',
   isUpgraded: false,
   toneOfVoice: 'Warm, International, Professional, and Relaxing',
 };
 
 export const getAppSettings = (): AppSettings => {
-  const saved = localStorage.getItem('APP_SETTINGS');
+  const saved = localStorage.getItem('app_settings_v4');
   return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
 };
 
 export const saveAppSettings = (settings: AppSettings) => {
-  localStorage.setItem('APP_SETTINGS', JSON.stringify(settings));
+  localStorage.setItem('app_settings_v4', JSON.stringify(settings));
   console.log('Logging to Google Sheets (APP_SETTINGS):', settings);
 };

@@ -225,65 +225,49 @@ export default function Home() {
       {/* Featured Experiences Highlight Grid */}
       <section className="container -mt-32 relative z-20 no-print">
         <div className="featured-grid">
-          {[
-            {
-              id: '1',
-              title: 'Traditional Thai Yoga Massage',
-              price: 95,
-              image: 'https://images.unsplash.com/photo-1544161515-4ae6ce6db874?q=80&w=600&fit=crop',
-              category: 'Healing'
-            },
-            {
-              id: '2',
-              title: 'Premium Aromatherapy Oil Massage',
-              price: 115,
-              image: 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?q=80&w=600&fit=crop',
-              category: 'Luxury'
-            },
-            {
-              id: '4',
-              title: 'Ultimate Zen Spa Package',
-              price: 150,
-              image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=600&fit=crop',
-              category: 'Ocean Zen'
-            }
-          ].map((exp, idx) => (
-            <motion.div
-              key={exp.id}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.2 }}
-              viewport={{ once: true }}
-              className="group relative h-[32rem] rounded-[4rem] overflow-hidden border border-white/20 shadow-2xl bg-white"
-            >
-              <img src={exp.image} alt={exp.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-ocean/80 via-ocean/20 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
-              
-              <div className="absolute bottom-12 left-10 right-10 space-y-5">
-                <span className="inline-block px-4 py-1.5 bg-gold text-navy text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
-                  {exp.category}
-                </span>
-                <h4 className="text-3xl font-serif font-black text-white leading-tight italic drop-shadow-lg">{exp.title}</h4>
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-3 text-gold">
-                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30">
-                      <Sparkles size={20} className="text-white" />
+          {featuredServices.slice(0, 3).map((service, idx) => {
+            const { price } = getCurrentPrice(service);
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.2 }}
+                viewport={{ once: true }}
+                className="group relative h-[32rem] rounded-[4rem] overflow-hidden border border-white/20 shadow-2xl bg-white"
+              >
+                <ServiceImage 
+                  src={service.imageUrl} 
+                  alt={service.name} 
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ocean/80 via-ocean/20 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
+                
+                <div className="absolute bottom-12 left-10 right-10 space-y-5">
+                  <span className="inline-block px-4 py-1.5 bg-gold text-navy text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
+                    {service.category}
+                  </span>
+                  <h4 className="text-3xl font-serif font-black text-white leading-tight italic drop-shadow-lg">
+                    {t(service.name, service.englishName)}
+                  </h4>
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-3 text-gold">
+                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30">
+                        <Sparkles size={20} className="text-white" />
+                      </div>
+                      <span className="text-2xl font-black text-white drop-shadow-md">{formatCurrency(price)}</span>
                     </div>
-                    <span className="text-2xl font-black text-white drop-shadow-md">{formatCurrency(exp.price)}</span>
+                    <button 
+                      onClick={() => handleAddClick(service)}
+                      className="w-14 h-14 rounded-full bg-white text-ocean shadow-2xl flex items-center justify-center hover:bg-gold hover:text-navy transition-all hover:scale-110"
+                    >
+                      <Plus size={28} />
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => {
-                      const service = services.find(s => s.id === exp.id);
-                      if (service) handleAddClick(service);
-                    }}
-                    className="w-14 h-14 rounded-full bg-white text-ocean shadow-2xl flex items-center justify-center hover:bg-gold hover:text-navy transition-all hover:scale-110"
-                  >
-                    <Plus size={28} />
-                  </button>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
@@ -414,77 +398,89 @@ export default function Home() {
         </div>
       </section>
 
-      {/* All Treatments Grid */}
-      <section className="container space-y-12 pb-32 no-print">
-        <div className="text-center md:text-left space-y-3">
-          <h3 className="text-4xl md:text-5xl font-serif font-black text-navy italic tracking-tight">{t('ทรีทเมนท์ทั้งหมด', 'All Vitality Treatments')}</h3>
-          <p className="text-ocean/50 text-[10px] font-black uppercase tracking-[0.5em]">{t('เลือกบริการที่เหมาะกับคุณ', 'Find Your Perfect Ocean Breeze Experience')}</p>
+      {/* All Treatments Price List Table (Luxury Master Template) */}
+      <section className="container space-y-16 pb-32 no-print max-w-6xl mx-auto">
+        <div className="text-center space-y-6">
+          <div className="w-24 h-1.5 bg-gold mx-auto rounded-full"></div>
+          <h3 className="text-5xl md:text-7xl font-serif font-black text-navy italic tracking-tight leading-tight">
+            {t('รายการบริการและราคา', 'Service Menu & Price List')}
+          </h3>
+          <p className="text-gold/60 text-sm md:text-xl font-black uppercase tracking-[0.5em]">
+            {t('สัมผัสประสบการณ์การปรนนิบัติระดับพรีเมียม', 'Exquisite Wellness Experiences')}
+          </p>
         </div>
 
         {activeCategory === 'GIFTS' ? (
           <VoucherStore />
         ) : (
-          <div className="featured-grid">
-          {filteredServices.map((service) => {
-            const { price } = getCurrentPrice(service);
-            return (
-              <motion.div 
-                key={service.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="bg-white rounded-[3.5rem] overflow-hidden shadow-xl border border-gold/10 flex flex-col h-full group hover:shadow-2xl hover:border-gold/30 transition-all duration-500"
-              >
-                {/* Image Header with Overlay */}
-                <div className="relative h-80 overflow-hidden">
-                  <ServiceImage src={service.imageUrl} alt={service.name} className="w-full h-full transition-transform duration-1000 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
-                  <div className="absolute bottom-8 left-8 right-8">
-                    <div className="flex justify-between items-end">
-                      <h4 className="font-serif font-black text-2xl leading-tight text-navy italic drop-shadow-sm">{t(service.name, service.englishName)}</h4>
-                      <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg border border-white/30 text-[10px] font-black text-navy">
-                        {service.durationMins}M
+          <div className="bg-white rounded-[4rem] shadow-[0_50px_100px_rgba(10,25,47,0.15)] border-2 border-gold/10 overflow-hidden">
+            <div className="hidden md:grid grid-cols-12 bg-navy p-10 text-gold border-b-4 border-gold/30">
+              <div className="col-span-7 text-xl font-black uppercase tracking-[0.3em] font-sans italic">{t('ประเภทบริการ / SERVICE', 'SERVICE')}</div>
+              <div className="col-span-2 text-center text-xl font-black uppercase tracking-[0.3em] font-sans italic">{t('เวลา / MINS', 'DURATION')}</div>
+              <div className="col-span-3 text-right text-xl font-black uppercase tracking-[0.3em] font-sans italic">{t('ราคา / PRICE', 'PRICE')}</div>
+            </div>
+
+            <div className="divide-y divide-gold/10">
+              {filteredServices.map((service, idx) => {
+                const { price } = getCurrentPrice(service);
+                const cleanName = service.name.split('(')[0].trim();
+                const cleanEnglishName = service.englishName.split('(')[0].trim();
+                
+                return (
+                  <motion.div 
+                    key={service.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    viewport={{ once: true }}
+                    onClick={() => handleAddClick(service)}
+                    className="grid grid-cols-1 md:grid-cols-12 p-10 md:p-14 items-center hover:bg-gold/5 transition-all group cursor-pointer relative overflow-hidden"
+                  >
+                    {/* Hover Glow */}
+                    <div className="absolute inset-x-0 inset-y-0 bg-gold/5 translate-x-full group-hover:translate-x-0 transition-transform duration-700 pointer-events-none" />
+
+                    <div className="col-span-7 space-y-3 relative z-10">
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-black text-navy/40 uppercase tracking-[0.4em] bg-navy/5 px-3 py-1 rounded-full">{service.category}</span>
+                      </div>
+                      <h4 className="text-3xl md:text-5xl font-serif font-black text-navy group-hover:text-gold transition-colors leading-tight italic">
+                        {t(cleanName, cleanEnglishName)}
+                      </h4>
+                      <p className="text-xl md:text-2xl text-slate-400 font-medium italic leading-relaxed max-w-2xl">
+                        {t(service.description, service.englishDescription || service.description)}
+                      </p>
+                    </div>
+
+                    <div className="col-span-2 text-center relative z-10 py-6 md:py-0">
+                      <div className="inline-flex items-center gap-3 px-8 py-3 bg-navy/5 rounded-full border-2 border-navy/5 text-navy group-hover:bg-navy group-hover:text-white transition-all shadow-inner">
+                        <Clock size={24} className="text-gold" />
+                        <span className="text-2xl font-black font-sans">{service.durationMins} min</span>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-10 flex-1 flex flex-col">
-                  <div className="flex items-center gap-2 mb-4 text-gold">
-                    {[1, 2, 3, 4, 5].map(i => <Star key={i} size={12} fill="currentColor" />)}
-                  </div>
-                  
-                  <p className="text-navy/60 text-sm font-medium leading-relaxed mb-8 line-clamp-2">
-                    {t(service.description, service.englishDescription)}
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 mb-8">
-                    <span className="text-[9px] text-ocean font-black uppercase bg-ocean/5 px-4 py-1.5 rounded-full border border-ocean/10">
-                      {service.category === 'MASSAGE' ? 'Deep Relaxation' : 'Ocean Fresh'}
-                    </span>
-                    <span className="text-[9px] text-ocean font-black uppercase bg-ocean/5 px-4 py-1.5 rounded-full border border-ocean/10">
-                      Certified
-                    </span>
-                  </div>
-
-                  <div className="mt-auto pt-6 flex items-center justify-between border-t border-ocean/5">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-ocean/30 uppercase tracking-widest">Pricing</span>
-                      <span className="text-2xl font-black text-navy">{formatCurrency(price)}</span>
+                    <div className="col-span-3 text-right space-y-6 relative z-10">
+                      <div className="text-5xl md:text-7xl font-black text-navy font-mono tracking-tighter group-hover:scale-110 transition-transform origin-right">
+                        ${price}
+                      </div>
+                      <button className="w-full md:w-auto px-12 py-5 bg-gold text-navy rounded-2xl text-xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-gold/20 hover:bg-navy hover:text-white hover:scale-105 active:scale-95 transition-all">
+                        {t('จองนัดหมาย', 'BOOK NOW')}
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleAddClick(service)}
-                      className="bg-gold text-navy h-14 px-8 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-navy hover:text-white transition-all active:scale-95 shadow-xl shadow-gold/20"
-                    >
-                      {t('จองนัดหมาย', 'Book Now')}
-                    </button>
-                  </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+            
+            {filteredServices.length === 0 && (
+              <div className="py-40 text-center space-y-6">
+                <div className="w-32 h-32 bg-gold/10 rounded-full flex items-center justify-center mx-auto text-gold/30">
+                  <Search size={48} />
                 </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+                <p className="text-navy/40 font-serif italic text-3xl font-black">{t('ไม่พบข้อมูลบริการที่คุณป้าหาค่ะ 🍊', 'No services found.')}</p>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Health Fund & Insurance Section */}
@@ -511,11 +507,28 @@ export default function Home() {
                 'Experience professional care with our qualified Remedial Massage therapists. We support instant HICAPS claims and provide official receipts for all major private health funds in Australia.'
               )}
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 opacity-50 font-black text-[8px] uppercase tracking-[0.2em] italic">
-              <span>• BUPA</span>
-              <span>• MEDIBANK</span>
-              <span>• AHM</span>
-              <span>• NIB</span>
+            <div className="pt-6 relative overflow-hidden h-10 flex items-center">
+              <motion.div 
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{ 
+                  duration: 20, 
+                  repeat: Infinity, 
+                  ease: "linear" 
+                }}
+                className="flex items-center gap-10 whitespace-nowrap opacity-40 font-black text-[9px] uppercase tracking-[0.3em] italic"
+              >
+                {[1, 2].map((group) => (
+                  <React.Fragment key={group}>
+                    <span>• BUPA</span>
+                    <span>• MEDIBANK</span>
+                    <span>• AHM</span>
+                    <span>• NIB</span>
+                    <span>• HCF</span>
+                    <span>• TEACHERS HEALTH</span>
+                    <span>• DEFENCE HEALTH</span>
+                  </React.Fragment>
+                ))}
+              </motion.div>
             </div>
           </div>
 

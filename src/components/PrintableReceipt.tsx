@@ -4,19 +4,46 @@ import { StaffStatus } from '../types';
 import { services } from '../data/services';
 
 interface PrintableReceiptProps {
-  session: StaffStatus;
-  paymentMethod: string;
+  session?: StaffStatus;
+  bookingData?: {
+    customerName: string;
+    serviceName: string;
+    serviceId?: string;
+    therapistName: string;
+    providerNumber?: string;
+    amount: number;
+    paymentMethod: string;
+    healthFund?: string;
+    memberId?: string;
+    date: Date;
+  };
+  paymentMethod?: string;
   hicapsData?: { claim: number; gap: number };
-  date: Date;
+  date?: Date;
 }
 
-export default function PrintableReceipt({ session, paymentMethod, hicapsData, date }: PrintableReceiptProps) {
-  const amount = paymentMethod === 'HICAPS' && hicapsData 
-    ? hicapsData.claim + hicapsData.gap 
-    : (session.currentPrice || 0);
+export default function PrintableReceipt({ session, bookingData, paymentMethod: propPaymentMethod, hicapsData, date: propDate }: PrintableReceiptProps) {
+  // Normalize data from either session or bookingData
+  const displayDate = bookingData?.date || propDate || new Date();
+  const displayPaymentMethod = bookingData?.paymentMethod || propPaymentMethod || 'Cash';
+  const displayCustomer = bookingData?.customerName || session?.currentCustomer || 'Guest';
+  const displayService = bookingData?.serviceName || session?.currentService || 'Massage Service';
+  const displayServiceId = bookingData?.serviceId || session?.currentServiceId;
+  const displayTherapist = bookingData?.therapistName || session?.therapistName || 'Staff';
+  const displayProviderNo = bookingData?.providerNumber || session?.providerNumber;
+  const displayHealthFund = bookingData?.healthFund || session?.healthFund;
+  const displayMemberId = bookingData?.memberId || session?.memberId;
+
+  const amount = bookingData?.amount !== undefined 
+    ? bookingData.amount 
+    : (displayPaymentMethod === 'HICAPS' && hicapsData 
+      ? hicapsData.claim + hicapsData.gap 
+      : (session?.currentPrice || 0));
   
   const gst = amount / 11;
   const subtotal = amount - gst;
+
+  const serviceTips = displayServiceId ? services.find(s => s.id === displayServiceId)?.postCareTips : null;
 
   return (
     <div className="print-only font-mono text-black bg-white p-4 w-full max-w-[80mm] mx-auto text-[10px] leading-tight">
@@ -55,26 +82,26 @@ export default function PrintableReceipt({ session, paymentMethod, hicapsData, d
       <div className="space-y-1">
         <div className="flex justify-between">
           <span>Date:</span>
-          <span>{date.toLocaleDateString('en-AU')}</span>
+          <span>{displayDate.toLocaleDateString('en-AU')}</span>
         </div>
         <div className="flex justify-between">
           <span>Time:</span>
-          <span>{date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>{displayDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         <div className="flex justify-between">
           <span>Client:</span>
-          <span className="font-bold">{session.currentCustomer || 'Guest'}</span>
+          <span className="font-bold">{displayCustomer}</span>
         </div>
-        {session.healthFund && (
+        {displayHealthFund && (
           <div className="flex justify-between">
             <span>Health Fund:</span>
-            <span>{session.healthFund}</span>
+            <span>{displayHealthFund}</span>
           </div>
         )}
-        {session.memberId && (
+        {displayMemberId && (
           <div className="flex justify-between">
             <span>Member ID:</span>
-            <span>{session.memberId}</span>
+            <span>{displayMemberId}</span>
           </div>
         )}
       </div>
@@ -82,39 +109,39 @@ export default function PrintableReceipt({ session, paymentMethod, hicapsData, d
       <div className="border-t border-dashed border-black my-2 pt-1">
         <div className="flex justify-between font-bold">
           <span>Therapist:</span>
-          <span>{session.therapistName}</span>
+          <span>{displayTherapist}</span>
         </div>
-        {session.providerNumber && (
+        {displayProviderNo && (
           <div className="flex justify-between">
             <span>Provider No:</span>
-            <span>{session.providerNumber}</span>
+            <span>{displayProviderNo}</span>
           </div>
         )}
       </div>
 
       <div className="border-t border-dashed border-black my-2 pt-1">
         <div className="flex justify-between">
-          <span className="flex-1">{session.currentService || 'Massage Service'}</span>
+          <span className="flex-1">{displayService}</span>
           <span className="ml-2">${amount.toFixed(2)}</span>
         </div>
       </div>
 
       <div className="border-t border-black pt-1 mt-2 space-y-1">
         <div className="flex justify-between">
-          <span>Subtotal:</span>
+          <span>Subtotal (Excl. GST):</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
-          <span>GST (10%):</span>
+          <span>GST Included (1/11):</span>
           <span>${gst.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm font-bold pt-1 border-t border-black">
-          <span>TOTAL:</span>
+          <span>TOTAL PAID:</span>
           <span>${amount.toFixed(2)}</span>
         </div>
       </div>
 
-      {paymentMethod === 'HICAPS' && hicapsData && (
+      {displayPaymentMethod === 'HICAPS' && hicapsData && (
         <div className="border border-black p-1 mt-2 space-y-1">
           <div className="text-center font-bold border-b border-black mb-1">HICAPS CLAIM</div>
           <div className="flex justify-between">
@@ -129,19 +156,20 @@ export default function PrintableReceipt({ session, paymentMethod, hicapsData, d
       )}
 
       <div className="text-center pt-4 border-t border-black mt-4">
-        <p>Paid via: {paymentMethod}</p>
+        <p>Payment Method: {displayPaymentMethod}</p>
         
-        {session.currentServiceId && services.find(s => s.id === session.currentServiceId)?.postCareTips && (
+        {serviceTips && (
           <div className="mt-4 border border-black p-2 text-left">
-            <p className="font-bold border-b border-black mb-1 text-center">POST-CARE ADVICE</p>
-            {services.find(s => s.id === session.currentServiceId)?.postCareTips?.map((tip, idx) => (
-              <p key={idx} className="mb-1 leading-tight">• {tip.en}</p>
+            <p className="font-bold border-b border-black mb-1 text-center font-sans tracking-wide">POST-CARE ADVICE</p>
+            {serviceTips.map((tip, idx) => (
+              <p key={idx} className="mb-1 leading-tight text-[9px]">• {tip.en}</p>
             ))}
           </div>
         )}
 
-        <p className="mt-2 italic">Thank you for visiting us!</p>
+        <p className="mt-4 italic">Thank you for visiting {storeConfig.storeName}!</p>
         <p className="mt-1">Please keep this receipt for your records.</p>
+        <p className="mt-1 text-[8px] opacity-50">System: AIS Premium Wellness v5.0</p>
       </div>
     </div>
   );
