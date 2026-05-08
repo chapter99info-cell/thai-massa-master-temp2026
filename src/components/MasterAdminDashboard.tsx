@@ -42,7 +42,7 @@ export default function MasterAdminDashboard() {
   const { bookings } = useBookings();
   const [settings, setSettings] = useState<AppSettings>(getAppSettings());
   const [activeTab, setActiveTab] = useState<'overview' | 'profit' | 'settings' | 'creative'>('overview');
-  const [miraMessage, setMiraMessage] = useState<string | null>(
+  const [nongSomMessage, setNongSomMessage] = useState<string | null>(
     t('สวัสดีค่ะพี่แสน หน้าจอนี้มีแค่เราสองคนที่รู้นะคะ พี่แสนเลือกเปิดระบบตามที่ลูกค้าจ่ายเงินได้เลยค่ะ หนูจะช่วยพี่เฝ้าดูและคำนวณค่า GP ให้พี่แสนแบบแม่นยำที่สุดค่ะ', 'Welcome, Master Admin. This screen is for your eyes only. You can enable features based on client payments. I will help you monitor and calculate GP fees accurately.')
   );
   const [isSaved, setIsSaved] = useState(false);
@@ -63,7 +63,7 @@ export default function MasterAdminDashboard() {
       saveAppSettings(newSettings);
       setSettings(newSettings);
       refreshPins();
-      setMiraMessage(t('ล้างรหัสผ่านทั้งหมดเป็น 0000 เรียบร้อยแล้วค่ะบอส!', 'All PINs have been reset to 0000!'));
+      setNongSomMessage(t('ล้างรหัสผ่านทั้งหมดเป็น 0000 เรียบร้อยแล้วค่ะบอส!', 'All PINs have been reset to 0000!'));
     }
   };
 
@@ -78,7 +78,7 @@ export default function MasterAdminDashboard() {
     refreshPins();
     setShowMasterPinModal(false);
     setNewMasterPin('');
-    setMiraMessage(t('ตั้งรหัสผ่านใหม่ให้คุณป้าเรียบร้อยแล้วค่ะบอส! บอกรหัสนี้ให้ป้าทางโทรศัพท์ได้เลยนะคะ', 'New PIN set for the owner! You can tell them this PIN over the phone now.'));
+    setNongSomMessage(t('ตั้งรหัสผ่านใหม่ให้พี่แสนเรียบร้อยแล้วค่ะบอส! บอกรหัสนี้ให้พี่ทางโทรศัพท์ได้เลยนะคะ', 'New PIN set for the owner! You can tell them this PIN over the phone now.'));
   };
   
   // Mock Sales Log for Revenue Dashboard
@@ -114,13 +114,13 @@ export default function MasterAdminDashboard() {
     saveAppSettings(settings);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
-    setMiraMessage(t('พี่แสนคะ... ยอดเงินค่าดูแลระบบเดือนนี้สรุปเรียบร้อยแล้วค่ะ! กดปุ่มส่ง Invoice ไปเก็บตังค์คุณป้าได้เลยนะคะ พอเก็บเงินเสร็จแล้วค่อยกดปุ่มเริ่มเดือนใหม่ค่ะ เตรียมตัวรับทรัพย์จุกๆ เลยค่ะบอส!', "Master Admin, the system maintenance fees for this month are summarized! You can send the invoice to the owner now. Once collected, click reset for the new month. Get ready for the big harvest, boss!"));
+    setNongSomMessage(t('พี่แสนคะ... ยอดเงินค่าดูแลระบบเดือนนี้สรุปเรียบร้อยแล้วค่ะ! กดปุ่มส่ง Invoice ไปเก็บตังค์พี่แสนได้เลยนะคะ พอเก็บเงินเสร็จแล้วค่อยกดปุ่มเริ่มเดือนใหม่ค่ะ เตรียมตัวรับทรัพย์จุกๆ เลยค่ะบอส!', "Master Admin, the system maintenance fees for this month are summarized! You can send the invoice to the owner now. Once collected, click reset for the new month. Get ready for the big harvest, boss!"));
   };
 
   const handleResetMonth = () => {
     if (window.confirm(t('คุณพี่แสนแน่ใจนะคะว่าจะเริ่มเดือนใหม่? ยอดที่โชว์อยู่จะถูกรีเซ็ตเป็น 0 แต่ข้อมูลในระบบยังอยู่ครบค่ะ', 'Are you sure you want to start a new month? The displayed totals will reset to 0, but system data remains intact.'))) {
       setResetDate(new Date().toISOString().split('T')[0]);
-      setMiraMessage(t('เริ่มเดือนใหม่เรียบร้อยค่ะบอส! ขอให้เดือนนี้ออเดอร์ปังๆ ร้านค้าสมัครกันเยอะๆ นะคะ', 'New month started, boss! Wishing you many more orders and new clients this month.'));
+      setNongSomMessage(t('เริ่มเดือนใหม่เรียบร้อยค่ะบอส! ขอให้เดือนนี้ออเดอร์ปังๆ ร้านค้าสมัครกันเยอะๆ นะคะ', 'New month started, boss! Wishing you many more orders and new clients this month.'));
     }
   };
 
@@ -158,9 +158,9 @@ export default function MasterAdminDashboard() {
         </button>
       </header>
 
-      {/* Chapter99 Solution (by Nong Mira) Guidance */}
+      {/* Chapter99 Solution (by Nong Som) Guidance */}
       <AnimatePresence>
-        {miraMessage && (
+        {nongSomMessage && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -171,11 +171,11 @@ export default function MasterAdminDashboard() {
               <Heart size={24} fill="currentColor" />
             </div>
             <div className="flex-1">
-              <p className="text-indigo-300 font-bold text-lg leading-tight font-sans">{miraMessage}</p>
-              <p className="text-[10px] text-indigo-400/60 uppercase font-black tracking-widest mt-1">{t('Chapter99 Solution (by Nong Mira)', 'Chapter99 Solution (by Nong Mira)')}</p>
+              <p className="text-indigo-300 font-bold text-lg leading-tight font-sans">{nongSomMessage}</p>
+              <p className="text-[10px] text-indigo-400/60 uppercase font-black tracking-widest mt-1">{t('Chapter99 Solution (by Nong Som)', 'Chapter99 Solution (by Nong Som)')}</p>
             </div>
             <button 
-              onClick={() => setMiraMessage(null)}
+              onClick={() => setNongSomMessage(null)}
               className="p-2 hover:bg-indigo-500/5 rounded-full text-indigo-400/40 hover:text-indigo-400 transition-colors"
             >
               <X size={20} />
@@ -266,7 +266,7 @@ export default function MasterAdminDashboard() {
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[ 
-              { label: 'Mira Altona', status: 'Healthy', lag: '0s', color: 'emerald' },
+              { label: 'Nong Som Pro', status: 'Healthy', lag: '0s', color: 'emerald' },
               { label: 'Chapter99 Massage', status: 'Healthy', lag: '2s', color: 'emerald' },
               { label: 'Syd Wellness', status: 'Syncing', lag: '15s', color: 'amber' },
               { label: 'Thai Garlic', status: 'Healthy', lag: '0s', color: 'emerald' }
@@ -538,7 +538,7 @@ export default function MasterAdminDashboard() {
                          ].map(opt => (
                            <button 
                              key={opt.id}
-                             onClick={() => setMiraMessage(t(`กำลังสั่ง AI ให้สร้างภาพ ${opt.label} นะคะ... 🍊`, `Generating ${opt.label}... 🍊`))}
+                             onClick={() => setNongSomMessage(t(`กำลังสั่ง AI ให้สร้างภาพ ${opt.label} นะคะ... 🍊`, `Generating ${opt.label}... 🍊`))}
                              className="p-4 bg-slate-900/50 border border-slate-700 rounded-2xl text-left hover:border-indigo-500/50 transition-all"
                            >
                              <span className="text-xs font-bold text-white block mb-1">{opt.label}</span>

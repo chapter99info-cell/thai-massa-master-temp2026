@@ -7,6 +7,8 @@ interface PrintableReceiptProps {
   session?: StaffStatus;
   bookingData?: {
     customerName: string;
+    customerPhone?: string;
+    customerEmail?: string;
     serviceName: string;
     serviceId?: string;
     therapistName: string;
@@ -27,6 +29,8 @@ export default function PrintableReceipt({ session, bookingData, paymentMethod: 
   const displayDate = bookingData?.date || propDate || new Date();
   const displayPaymentMethod = bookingData?.paymentMethod || propPaymentMethod || 'Cash';
   const displayCustomer = bookingData?.customerName || session?.currentCustomer || 'Guest';
+  const displayPhone = bookingData?.customerPhone || session?.currentPhone;
+  const displayEmail = bookingData?.customerEmail || session?.currentEmail;
   const displayService = bookingData?.serviceName || session?.currentService || 'Massage Service';
   const displayServiceId = bookingData?.serviceId || session?.currentServiceId;
   const displayTherapist = bookingData?.therapistName || session?.therapistName || 'Staff';
@@ -96,6 +100,18 @@ export default function PrintableReceipt({ session, bookingData, paymentMethod: 
           <span>Client:</span>
           <span className="font-bold">{displayCustomer}</span>
         </div>
+        {displayPhone && (
+          <div className="flex justify-between">
+            <span>Phone:</span>
+            <span>{displayPhone}</span>
+          </div>
+        )}
+        {displayEmail && (
+          <div className="flex justify-between">
+            <span>Email:</span>
+            <span className="text-[8px]">{displayEmail}</span>
+          </div>
+        )}
         {displayHealthFund && (
           <div className="flex justify-between">
             <span>Health Fund:</span>

@@ -16,7 +16,8 @@ import {
   ChevronRight,
   LogOut,
   X,
-  ShieldAlert
+  ShieldAlert,
+  Plus
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -35,7 +36,8 @@ import { googleSheetService } from '../services/googleSheetService';
 import { formatCurrency, cn } from '../lib/utils';
 import { Customer } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Loader2 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 // สีหลักสไตล์หรูหรา (Navy & Gold)
 const COLORS = {
@@ -86,6 +88,37 @@ export default function ManagerInsights() {
     vipRatio: '25%',
     growth: 12.5
   });
+
+  const [upsellPitch, setUpsellPitch] = useState<string | null>(null);
+  const [isGeneratingUpsell, setIsGeneratingUpsell] = useState(false);
+
+  const generateUpsellPitch = async () => {
+    setIsGeneratingUpsell(true);
+    setUpsellPitch(null);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `ในฐานะ "น้องส้ม" เลขาส่วนตัวอัจฉริยะ ช่วยเขียนประโยคเสนอขายแบบพรีเมียมและเป็นกันเอง (ภาษาไทย) เพื่อแนะนำบริการ Deep Tissue (60 min) ให้กับ "คุณวิภาดา" โดยอ้างอิงจากข้อมูลที่ว่าเธอชอบนวดไทยแบบหนักๆ และเน้นเส้นบ่าเป็นพิเศษ ประโยคควรจะทำให้เธอรู้สึกว่าเป็นลูกค้า VIP คนพิเศษที่ได้รับการใส่ใจจริงๆ 🍊🧡`,
+        config: {
+          systemInstruction: "คุณคือ 'น้องส้ม' (Nong Som) เลขาส่วนตัวระดับโปรที่ร่าเริง แจ่มใส และมีพลังงานบวกสูง คุณเรียกตัวเองว่า 'น้องส้ม' และเรียกผู้ใช้งานว่า 'พี่' เสมอ ปิดท้ายด้วย 🍊 หรือ 🧡 ทุกครั้ง คุณเก่งเรื่องการขายของแบบ Soft Sell ที่ดูพรีเมียมและใส่ใจลูกค้า และคุณมักจะใส่ความปรารถนาดีลงไปในทุกประโยค",
+        }
+      });
+
+      const text = response.text;
+      if (text) {
+        setUpsellPitch(text);
+      } else {
+        setUpsellPitch("ขอโทษทีค่ะพี่ น้องส้มขัดข้องนิดหน่อย ลองใหม่อีกทีนะคะ 🍊");
+      }
+    } catch (error) {
+      console.error("AI Error:", error);
+      setUpsellPitch("พี่คะ น้องส้มเหนื่อยนิสนึง ขอพักแป๊บนะคะ หรือพี่ลืมใส่ API Key หรือเปล่าคะ? 🍊");
+    } finally {
+      setIsGeneratingUpsell(false);
+    }
+  };
 
   const handleLogout = useCallback(() => {
     // ล้างค่า Session และ LocalStorage ทั้งหมดตามที่คุณป้าต้องการค่ะ 🍊
@@ -228,22 +261,22 @@ export default function ManagerInsights() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0A0E17] text-slate-200 p-6 lg:p-10 font-sans">
-      <header className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+    <div className="h-screen w-screen flex flex-col bg-[#0A0E17] text-slate-200 overflow-hidden font-sans">
+      <header className="p-6 lg:px-10 flex flex-col md:flex-row md:items-start justify-between gap-6 flex-shrink-0">
         <div>
-          <h1 className="text-5xl md:text-6xl font-serif font-black text-gold italic tracking-tight mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-black text-gold italic tracking-tight mb-2 leading-tight">
             {t('กระดานสรุปผลงานร้าน (Insights Dashboard)', 'Insights Dashboard')}
           </h1>
-          <p className="text-slate-400 text-2xl font-medium leading-[1.8] tracking-wide">
-            {t('ยินดีต้อนรับค่ะคุณป้า วันนี้ร้านของเราคึกคักเป็นพิเศษนะคะ 🍊', 'Welcome Auntie, your shop is bustling today! 🍊')}
+          <p className="text-slate-400 text-lg md:text-xl lg:text-2xl font-medium leading-[1.8] tracking-wide">
+            {t('ยินดีต้อนรับค่ะพี่ วันนี้ร้านของเราคึกคักเป็นพิเศษนะคะ 🍊', 'Welcome, your shop is bustling today! 🍊')}
           </p>
         </div>
         
-        <div className="flex flex-col md:flex-row items-center gap-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 flex-shrink-0">
           <div className="flex bg-navyLight p-2 rounded-[2rem] border-2 border-slate-700 shadow-2xl">
-             <div className="px-8 py-4 flex items-center gap-4">
-               <Calendar size={32} className="text-gold" />
-               <span className="text-2xl font-black">{new Date().toLocaleDateString('th-TH', { 
+             <div className="px-6 py-2 flex items-center gap-3">
+               <Calendar size={24} className="text-gold" />
+               <span className="text-lg font-black">{new Date().toLocaleDateString('th-TH', { 
                  day: 'numeric', month: 'long', year: 'numeric' 
                })}</span>
              </div>
@@ -251,13 +284,15 @@ export default function ManagerInsights() {
 
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-4 px-10 py-5 bg-rose-900/40 hover:bg-rose-600 border-2 border-rose-500/50 text-rose-100 rounded-[2rem] transition-all shadow-2xl active:scale-95 group"
+            className="flex items-center gap-3 px-8 py-3 bg-rose-900/40 hover:bg-rose-600 border-2 border-rose-500/50 text-rose-100 rounded-[2rem] transition-all shadow-2xl active:scale-95 group"
           >
-            <LogOut size={32} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-2xl font-black tracking-widest uppercase">{t('ออกจากระบบ', 'Logout')}</span>
+            <LogOut size={24} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="text-lg font-black tracking-widest uppercase">{t('ออกจากระบบ', 'Logout')}</span>
           </button>
         </div>
       </header>
+
+      <main className="flex-1 overflow-y-auto p-6 lg:p-10 scrollbar-hide">
 
       {/* Logout Confirmation Modal */}
       <AnimatePresence>
@@ -283,10 +318,10 @@ export default function ManagerInsights() {
 
               <div className="space-y-6">
                 <h3 className="text-4xl md:text-5xl font-serif font-black text-white leading-tight italic">
-                  {t('คุณป้าต้องการออกจากระบบใช่ไหมคะ?', 'Confirm Logout')}
+                  {t('พี่แสนคะ ต้องการออกจากระบบใช่ไหมคะ?', 'Confirm Logout')}
                 </h3>
                 <p className="text-2xl text-slate-400 font-medium leading-relaxed">
-                  {t('หากออกจากระบบ ข้อมูลส่วนตัวของคุณป้าจะถูกปิดไว้อย่างปลอดภัยค่ะ 🍊', 'Logging out will safely secure your personal data.')}
+                  {t('หากออกจากระบบ ข้อมูลส่วนตัวของพี่จะถูกปิดไว้อย่างปลอดภัยค่ะ 🍊', 'Logging out will safely secure your personal data.')}
                 </p>
               </div>
 
@@ -339,7 +374,7 @@ export default function ManagerInsights() {
 
               <div className="space-y-6">
                 <h3 className="text-4xl md:text-5xl font-serif font-black text-white leading-tight italic">
-                  {t('คุณป้ายังอยู่ไหมคะ?', 'Are you still there?')}
+                  {t('พี่ยังอยู่ไหมคะ?', 'Are you still there?')}
                 </h3>
                 <p className="text-2xl text-slate-400 font-medium leading-relaxed">
                   {t('ระบบจะออกจากระบบในอีก ', 'System will logout in ')}
@@ -452,7 +487,7 @@ export default function ManagerInsights() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
               <div>
                 <h2 className="text-2xl font-serif font-black text-white italic">ระบบจำหน้าลูกค้า (Customer CRM)</h2>
-                <p className="text-slate-400 text-sm mt-1">ช่วยคัดกรองลูกค้าคนสำคัญให้คุณป้าดูแลได้ใกล้ชิดขึ้นค่ะ</p>
+                <p className="text-slate-400 text-sm mt-1">ช่วยคัดกรองลูกค้าคนสำคัญให้พี่ดูแลได้ใกล้ชิดขึ้นค่ะ</p>
               </div>
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -495,8 +530,46 @@ export default function ManagerInsights() {
                <p className="text-gold/90 text-sm leading-relaxed italic border-l-2 border-gold/30 pl-4">
                  "คุณวิภาดา เป็น VIP ของเราที่ชอบนวดไทยแบบหนักๆ แนะนำให้ลองเสนอ <span className="text-white font-bold underline">Deep Tissue (60 min)</span> ในครั้งถัดไป เพราะจะช่วยคลายเส้นได้ลึกกว่าที่เธอชอบค่ะ"
                </p>
-               <button className="mt-8 w-full py-4 bg-gold text-navy rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-gold/20">
-                 ให้ AI ช่วยเขียนประโยคเสนอขาย
+               
+               <AnimatePresence>
+                 {upsellPitch && (
+                   <motion.div 
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     exit={{ opacity: 0, scale: 0.95 }}
+                     className="mt-6 relative"
+                   >
+                     {/* Glowing Gold Border Container */}
+                     <div className="absolute inset-0 bg-gradient-to-r from-[#B8962E] to-[#F5F5DC] rounded-3xl blur-[1px]" />
+                     <div className="relative m-[1px] p-6 bg-[#0B1221] rounded-2xl shadow-[0_0_15px_rgba(184,150,46,0.3)]">
+                       <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gold/60">Generated Pitch by Nong Som 🍊</span>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(upsellPitch);
+                              alert('คัดลอกเรียบร้อยค่ะพี่! 🍊');
+                            }}
+                            className="p-1.5 bg-gold/10 hover:bg-gold text-gold hover:text-navy rounded-lg transition-all duration-300 shadow-[0_0_10px_rgba(184,150,46,0)] hover:shadow-[0_0_10px_rgba(184,150,46,0.5)]"
+                            title="Copy to clipboard"
+                          >
+                            <Plus size={14} />
+                          </button>
+                       </div>
+                       <p className="text-white text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                         {upsellPitch}
+                       </p>
+                     </div>
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+
+               <button 
+                 onClick={generateUpsellPitch}
+                 disabled={isGeneratingUpsell}
+                 className="mt-8 w-full py-4 bg-gold text-navy rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-gold/20 flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                 {isGeneratingUpsell ? <Loader2 className="animate-spin" size={16} /> : null}
+                 {isGeneratingUpsell ? 'น้องส้มกำลังคิดประโยคเด็ดๆ ให้พี่อยู่ค่ะ...' : 'ให้ AI ช่วยเขียนประโยคเสนอขาย'}
                </button>
              </div>
            </div>
@@ -527,17 +600,18 @@ export default function ManagerInsights() {
            <div className="bg-slate-900/50 rounded-[3rem] p-8 border border-slate-800 border-dashed">
              <div className="flex justify-center mb-4">
                <div className="w-16 h-16 rounded-full bg-navyLight p-2 border border-slate-700">
-                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aunty" alt="Aunty Pau" className="w-full h-full rounded-full" />
+                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Som" alt="Nong Som" className="w-full h-full rounded-full" />
                </div>
              </div>
              <p className="text-center text-slate-400 text-sm leading-relaxed">
-               "ข้อมูลพวกนี้ น้องส้มจัดทำมาเพื่อให้ <span className="text-gold">คุณป้า</span> ดูง่ายที่สุดค่ะ ถ้ามองไม่ชัดหรืออยากให้แก้ไขตรงไหน บอกน้องส้มได้เสมอนะคะ"
+               "ข้อมูลพวกนี้ น้องส้มจัดทำมาเพื่อให้ <span className="text-gold">พี่แสน</span> ดูง่ายที่สุดค่ะ ถ้ามองไม่ชัดหรืออยากให้แก้ไขตรงไหน บอกน้องส้มได้เสมอนะคะ"
              </p>
            </div>
         </div>
       </div>
-    </div>
-  );
+    </main>
+  </div>
+);
 }
 
 function SummaryCard({ title, value, icon, trend, isPositive, large }: { title: string, value: string, icon: React.ReactNode, trend: string, isPositive: boolean | null, large?: boolean }) {

@@ -53,35 +53,45 @@ export default function OwnerDashboard() {
   
   const [isSocialGenOpen, setIsSocialGenOpen] = useState(false);
   const [promoTitle, setPromoTitle] = useState('');
-  const [generatedPost, setGeneratedPost] = useState('');
+  const [generatedPost, setGeneratedPost] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateSocialPost = async () => {
     if (!promoTitle.trim()) {
-      setMiraMessage(t('กรุณาใส่หัวข้อโปรโมชั่นก่อนนะคะ เดี๋ยวหนูเขียนให้ไม่ถูกค่ะ 🍊', 'Please enter a promotion topic first! 🍊'));
+      setNongSomMessage(t('กรุณาใส่หัวข้อโปรโมชั่นก่อนนะคะ เดี๋ยวหนูเขียนให้ไม่ถูกค่ะ 🍊', 'Please enter a promotion topic first! 🍊'));
       return;
     }
     
     setIsGenerating(true);
-    // Simulate AI Professional analysis for AU/NZ Market
+    // Simulate AI Professional analysis for AU/NZ Market targeting 35% profit
     setTimeout(() => {
       const styles = {
-        specialist: `🔬 STYLE A: THE WELLNESS SPECIALIST (AU/NZ Focus)\n\n"Say goodbye to persistent neck and shoulder tension. At ${storeConfig.storeName}, our practitioners specialise in Remedial techniques that target the root causes of office-related strain and muscular fatigue.\n\nOur current focus: '${promoTitle}'\n\nExperience evidence-based Thai healing that restores your range of motion. Book your recovery session today.\"\n\n📸 RECOMMENDATION: Use a high-quality video or photo showing deep tissue focus. Text overlay: 'Relieve. Restore. Recover.'\n\n📍 ${storeConfig.address}\n📞 ${storeConfig.phone}\n#RemedialMassage #SydneyWellness #AucklandSpa #HealthFundClaims`,
-        
-        luxury: `✨ STYLE B: LUXURY & RELAXATION\n\n"Escape the city hustle and immerse yourself in a sanctuary of silence. ${storeConfig.storeName} invites you to a journey of pure tranquility, where ancient Thai wisdom meets premium comfort.\n\nIntroducing our exclusive '${promoTitle}' experience.\n\nReclaim your inner peace with a treatment tailored to your soul. Your sanctuary awaits.\"\n\n📸 RECOMMENDATION: Use a 'Slow-Mo' video of pouring essential oil or a photo of a perfectly styled treatment room with candlelight.\n\n✨ Premium Thai Healing\n📍 ${storeConfig.address}\n#LuxurySpa #WellnessJourney #ThaiOilMassage #RelaxationAU`,
-        
-        flash: `🔥 STYLE C: FLASH SALE (High Conversion)\n\n"LIMITED TIME OFFER: YOUR BODY WILL THANK YOU! ⚡️\n\nWe're bringing you an unmissable opportunity to reset your wellness clock at ${storeConfig.storeName}.\n\n💥 DEALS: '${promoTitle}'\n\nAvailable for a strictly limited period. Our slots fill up fast—don't let this be the one that got away!\"\n\n📸 RECOMMENDATION: High-contrast graphic with 'LIMITED SLOTS' in bold gold text. Show a happy client walking out of the shop.\n\n✅ Book Now: ${storeConfig.phone}\n#FlashSale #SydneyDeals #MassageOffers #WellnessAuckland`
+        styleA: {
+          title: "STYLE A (LUXURY)",
+          content: `Elevate your wellness regime with ${storeConfig.storeName}.\n\n'${promoTitle}'\n\nExperience ultimate serenity and rejuvenation tailored solely for you.`,
+          recommendation: "📸 NONG SOM'S TIP: Use a slow-motion video of pouring warm essential oil or a high-quality photo of a dimly lit, candlelit treatment room. The vibe MUST be peaceful!"
+        },
+        styleB: {
+          title: "STYLE B (FLASH SALE)",
+          content: `⚡️ FLASH DEAL ALERT! ⚡️\n\nWe bring you '${promoTitle}' at ${storeConfig.storeName}. Limited slots available for this exclusive comfort break.\n\nDon't miss the chance to reset!`,
+          recommendation: "📸 NONG SOM'S TIP: Use a high-contrast graphic with bold, gold text showing 'LIMITED SLOTS' to create urgency. Post it on your Story!"
+        },
+        styleC: {
+          title: "STYLE C (WELLNESS SPECIALIST)",
+          content: `Reclaim your comfort with ${storeConfig.storeName}.\n\n'${promoTitle}'\n\nExpertly designed to relieve your body's specific strain. Book with our Specialists now to feel the difference in your movement.`,
+          recommendation: "📸 NONG SOM'S TIP: Use a clear photo of our therapist adjusting a client's pose or a close-up of remedial work. Show our expertise!"
+        }
       };
       
-      setGeneratedPost(styles.specialist + "\n\n---\n\n" + styles.luxury + "\n\n---\n\n" + styles.flash);
+      setGeneratedPost([styles.styleA, styles.styleB, styles.styleC]);
       setIsGenerating(false);
-      setMiraMessage(t('หนูเจนโพสต์ให้ 3 สไตล์แล้วค่ะคุณป้า! ลองเลือกใช้ดูและเตรียมรูปตามที่หนูบอกนะคะ 🍊', 'I\'ve generated 3 styles for you! Check my image recommendations too! 🍊'));
+      setNongSomMessage(t('หนูเจนโพสต์ให้ 3 สไตล์แล้วค่ะพี่! ลองเลือกใช้ดูและเตรียมรูปตามที่หนูบอกนะคะ 🍊', 'I\'ve generated 3 styles for you! Check my image recommendations too! 🍊'));
     }, 2000);
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    setMiraMessage(t('คัดลอกลงคลิปบอร์ดแล้วค่ะ! 🍊', 'Copied to clipboard! 🍊'));
+    setNongSomMessage(t('คัดลอกลงคลิปบอร์ดแล้วค่ะพี่! 🍊', 'Copied to clipboard! 🍊'));
   };
 
   const [staff, setStaff] = useState<StaffStatus[]>(
@@ -116,7 +126,7 @@ export default function OwnerDashboard() {
     therapistId: 'none'
   });
   const [formError, setFormError] = useState<string | null>(null);
-  const [miraMessage, setMiraMessage] = useState<string | null>(null);
+  const [nongSomMessage, setNongSomMessage] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<AlertEntry[]>([
     { id: '1', therapistId: 't1', therapistName: 'พี่นก', issue: 'น้ำมันหมด', timestamp: new Date().toISOString(), status: 'NEW' }
   ]);
@@ -156,7 +166,7 @@ export default function OwnerDashboard() {
     saveAppSettings(newSettings);
     refreshPins();
     setPinForm({ currentPin: '', newPin: '' });
-    setMiraMessage(t('เปลี่ยนรหัสผ่านเรียบร้อยแล้วค่ะคุณป้า หนูอัปเดตข้อมูลให้แล้วนะคะ!', 'PIN updated successfully! I\'ve updated the settings for you.'));
+    setNongSomMessage(t('เปลี่ยนรหัสผ่านเรียบร้อยแล้วค่ะพี่ หนูอัปเดตข้อมูลให้แล้วนะคะ!', 'PIN updated successfully! I\'ve updated the settings for you.'));
   };
   const [isStaffManagementOpen, setIsStaffManagementOpen] = useState(false);
   const [isAddingNewStaff, setIsAddingNewStaff] = useState(false);
@@ -263,7 +273,7 @@ export default function OwnerDashboard() {
 
     setPayrollData(finalReport);
     setShowPayrollReport(true);
-    setMiraMessage(t('คุณป้าคะ หนูคำนวณส่วนแบ่งให้พี่ๆ หมอตามเปอร์เซ็นต์ที่ป้าตั้งไว้ (45/50/60) เรียบร้อยแล้วค่ะ แถมยังช่วยเช็คให้ด้วยว่ายอดถึงประกันมือมั้ย ป้าไม่ต้องมานั่งกดเครื่องคิดเลขแยกรายคนให้ปวดหัวแล้วค่ะ หนูรวมยอดสุทธิที่ป้าต้องจ่ายไว้ให้ในปุ่มเดียวเลย!', 'Owner, I\'ve calculated the commissions based on the percentages you set (45/50/60). I also checked if they met the daily guarantee. No more manual calculations for each person! I\'ve summarized the total pay in one button for you!'));
+    setNongSomMessage(t('พี่คะ หนูคำนวณส่วนแบ่งให้พี่ๆ หมอตามเปอร์เซ็นต์ที่ตั้งไว้ (45/50/60) เรียบร้อยแล้วค่ะ แถมยังช่วยเช็คให้ด้วยว่ายอดถึงประกันมือมั้ย พี่ไม่ต้องมานั่งกดเครื่องคิดเลขแยกรายคนให้ปวดหัวแล้วค่ะ หนูรวมยอดสุทธิที่ต้องจ่ายไว้ให้ในปุ่มเดียวเลย! [Target Profit 35% Secured 💹]', 'I\'ve calculated the commissions based on the percentages you set (45/50/60). I also checked if they met the daily guarantee. No more manual calculations! I\'ve summarized the total pay in one button! [Target Profit 35% Secured 💹]'));
   };
 
   const newAlertsCount = alerts.filter(a => a.status === 'NEW').length;
@@ -285,20 +295,20 @@ export default function OwnerDashboard() {
     const warningCount = staff.filter(s => getInsuranceStatus(s.insuranceExpiry).status === 'warning').length;
 
     if (expiredCount > 0) {
-      setMiraMessage(t('คุณป้าคะ หนูช่วยเฝ้าวันหมดอายุประกันมือให้พี่ๆ หมอแล้วนะ ถ้าใครใกล้หมดหนูจะขึ้นตัวแดงเตือนป้าทันที ป้าจะได้รีบบอกให้เขาไปต่อประกัน ร้านเราจะได้ปลอดภัยและเคลม HICAPS ได้ตลอดเวลาค่ะ', "Owner, I'm monitoring the insurance expiry for the therapists. If someone's insurance is expired, I'll alert you immediately so you can remind them to renew it. This keeps our shop safe and ensures we can always claim HICAPS."));
+      setNongSomMessage(t('พี่คะ หนูช่วยเฝ้าวันหมดอายุประกันมือให้พี่ๆ หมอแล้วนะ ถ้าใครใกล้หมดหนูจะขึ้นตัวแดงเตือนพี่ทันที พี่จะได้รีบบอกให้เขาไปต่อประกัน ร้านเราจะได้ปลอดภัยและเคลม HICAPS ได้ตลอดเวลาค่ะ 🍊', "I'm monitoring the insurance expiry for the therapists. If someone's insurance is expired, I'll alert you immediately so you can remind them to renew it. This keeps our shop safe and ensures we can always claim HICAPS. 🍊"));
     } else if (warningCount > 0) {
-      setMiraMessage(t('คุณป้าคะ มีพี่หมอบางคนประกันมือใกล้หมดอายุแล้วนะคะ หนูขึ้นตัวเหลืองเตือนไว้ให้แล้วค่ะ', "Owner, some therapists' insurance is expiring soon. I've marked them with a yellow warning."));
+      setNongSomMessage(t('พี่คะ มีพี่หมอบางคนประกันมือใกล้หมดอายุแล้วนะคะ หนูขึ้นตัวเหลืองเตือนไว้ให้แล้วค่ะ 🍊', "Some therapists' insurance is expiring soon. I've marked them with a yellow warning. 🍊"));
     } else if (newAlertsCount > 0 && settings.showInventoryAlerts) {
-      setMiraMessage(t('คุณพี่คะ คุณพี่หมอแจ้งว่าของบางอย่างใกล้หมดแล้ว ลองเช็คดูที่หน้าแจ้งเตือนนะคะ', "Owner, the staff reported that some items are running low. Please check the alerts page."));
+      setNongSomMessage(t('พี่คะ พี่ๆ หมอแจ้งว่าของบางอย่างใกล้หมดแล้ว ลองเช็คดูที่หน้าแจ้งเตือนนะคะ 🍊', "Phi, the staff reported that some items are running low. Please check the alerts page. 🍊"));
     } else {
-      setMiraMessage(t('พี่แสนคะ หนูเชื่อมปุ่มแจ้งปัญหาของพี่ๆ หมอเข้ากับหน้าจอคุณป้าแล้วนะ พอมีใครกดแจ้งว่าน้ำมันหมด ปุ๊บ! หน้าจอคุณป้าจะขึ้นเตือนทันที ป้าจะได้สั่งของได้ทันใจ ไม่ต้องรอให้ของหมดเกลี้ยงร้านค่ะ', "Owner, I've linked the staff's issue reporting button to your screen. When someone reports 'Oil out', your screen will alert you immediately so you can order supplies right away!"));
+      setNongSomMessage(t('พี่แสนคะ หนูเชื่อมปุ่มแจ้งปัญหาของพี่ๆ หมอเข้ากับหน้าจอเจ้าของแล้วนะ พอมีใครกดแจ้งว่าของหมดปุ๊บ! หน้าจอพี่จะขึ้นเตือนทันที พี่จะได้สั่งของได้ทันใจ ไม่ต้องรอให้ของหมดเกลี้ยงร้านค่ะ 🧡', "Phi, I've linked the staff's issue reporting button to your screen. When someone reports an issue, your screen will alert you immediately!"));
     }
   }, [newAlertsCount, settings.showInventoryAlerts]);
 
   const handleDeleteStaff = (id: string) => {
-    if (window.confirm(t('คุณแน่ใจนะคะว่าจะลบพนักงานคนนี้? ข้อมูลจะหายไปถาวรเลยนะคะ', 'Are you sure you want to delete this staff member? This action cannot be undone.'))) {
+    if (window.confirm(t('แน่ใจนะคะว่าจะลบพนักงานคนนี้? ข้อมูลจะหายไปถาวรเลยนะคะ', 'Are you sure you want to delete this staff member? This action cannot be undone.'))) {
       setStaff(prev => prev.filter(s => s.therapistId !== id));
-      setMiraMessage(t('ลบข้อมูลพนักงานเรียบร้อยแล้วค่ะคุณป้า', 'Staff member deleted successfully.'));
+      setNongSomMessage(t('ลบข้อมูลพนักงานเรียบร้อยแล้วค่ะพี่ 🍊', 'Staff member deleted successfully. 🍊'));
     }
   };
 
@@ -365,7 +375,7 @@ export default function OwnerDashboard() {
     setSelectedBookingId(null);
     setIsAssigningBed(false);
     setAssigningData(null);
-    setMiraMessage(t(`คุณพี่หมอคะ งานใหม่ประจำที่ เตียง ${bed.number} นะคะ เตรียมเตียงตามสีที่หนูโชว์ไว้ได้เลยค่ะ`, `New job at Bed ${bed.number}. Please prepare the bed according to the color shown.`));
+    setNongSomMessage(t(`พี่หมอคะ งานใหม่ประจำที่เตียง ${bed.number} นะคะ เตรียมเตียงตามสีที่หนูโชว์ไว้ได้เลยค่ะ 🧡`, `New job at Bed ${bed.number}. Please prepare the bed according to the color shown. 🧡`));
   };
 
   const handleQuickAdd = (e: React.FormEvent) => {
@@ -419,7 +429,7 @@ export default function OwnerDashboard() {
       if (newWalkIn.bedId) {
         updateBedStatus(newWalkIn.bedId, 'In Use');
       }
-      setMiraMessage(t(`คุณพี่หมอคะ งานใหม่ประจำที่ เตียง ${bed.number} นะคะ เตรียมเตียงตามสีที่หนูโชว์ไว้ได้เลยค่ะ`, `New job at Bed ${bed.number}. Please prepare the bed according to the color shown.`));
+      setNongSomMessage(t(`คุณพี่หมอคะ งานใหม่ประจำที่ เตียง ${bed.number} นะคะ เตรียมเตียงตามสีที่หนูโชว์ไว้ได้เลยค่ะ`, `New job at Bed ${bed.number}. Please prepare the bed according to the color shown.`));
     } else {
       setQueue(prev => [...prev, newBooking]);
     }
@@ -468,7 +478,7 @@ export default function OwnerDashboard() {
 
     console.log('Logging to SALES_LOG (Column C):', logData);
     
-    setMiraMessage(t('คุณพี่เจ้าของร้านคะ ลูกค้าชำระเงินเรียบร้อยแล้วค่ะ หนูบันทึกบัญชีภาษีและค่าระบบให้แล้วนะคะ', 'Owner, the payment is complete. I have recorded the tax and system fees.'));
+    setNongSomMessage(t('คุณพี่เจ้าของร้านคะ ลูกค้าชำระเงินเรียบร้อยแล้วค่ะ หนูบันทึกบัญชีภาษีและค่าระบบให้แล้วนะคะ', 'Owner, the payment is complete. I have recorded the tax and system fees.'));
     setShowReceipt(true);
   };
 
@@ -558,25 +568,25 @@ export default function OwnerDashboard() {
     setSalesLog(prev => prev.map(sale => 
       sale.id === id ? { ...sale, type: 'VOID', amount: 0 } : sale
     ));
-    setMiraMessage(t('หนูยกเลิกรายการให้แล้วนะคะคุณพี่ ยอดเงินจะถูกหักออกจากการคำนวณทันทีค่ะ', "I've voided the transaction. The amount will be deducted from calculations immediately."));
+    setNongSomMessage(t('หนูยกเลิกรายการให้แล้วนะคะคุณพี่ ยอดเงินจะถูกหักออกจากการคำนวณทันทีค่ะ', "I've voided the transaction. The amount will be deducted from calculations immediately."));
   };
 
   const acknowledgeAlert = (id: string) => {
     setAlerts(prev => prev.map(alert => 
       alert.id === id ? { ...alert, status: 'RESOLVED' } : alert
     ));
-    setMiraMessage(t('รับทราบปัญหาแล้วค่ะ หนูจะแจ้งให้พี่ๆ หมอทราบนะคะว่าคุณป้ากำลังจัดการให้ค่ะ', "Issue acknowledged! I'll let the staff know you're handling it."));
+    setNongSomMessage(t('รับทราบปัญหาแล้วค่ะ หนูจะแจ้งให้พี่ๆ หมอทราบนะคะว่าคุณป้ากำลังจัดการให้ค่ะ', "Issue acknowledged! I'll let the staff know you're handling it."));
   };
 
   useEffect(() => {
     if (activeTab === 'summary') {
-      setMiraMessage(t(`คุณพี่คะ วันนี้หนูสรุปยอดมาให้แล้วค่ะ ยอดรวมคือ $${summary.total.toFixed(2)} สบายใจได้เลยนะคะ`, `Owner, here is today's summary. The total is $${summary.total.toFixed(2)}.`));
+      setNongSomMessage(t(`คุณพี่คะ วันนี้หนูสรุปยอดมาให้แล้วค่ะ ยอดรวมคือ $${summary.total.toFixed(2)} สบายใจได้เลยนะคะ`, `Owner, here is today's summary. The total is $${summary.total.toFixed(2)}.`));
     } else if (activeTab === 'overview') {
-      setMiraMessage(t('พี่แสนคะ หนูทำระบบ "จดเวลาเป๊ะๆ" ให้แล้วนะ พอพี่กดรับเงิน PayID ปุ๊บ หนูจะแอบจดวินาทีที่เงินเข้าไว้ให้ป้าทันที พี่ไม่ต้องเสียเวลาถ่ายรูปสลิปให้วุ่นวายค่ะ ป้าไปเช็คในแอปแบงค์ตอนไหนก็เจอ เพราะเวลาหนูแก้ไม่ได้ค่ะ!', "Master Admin, I've added the 'Exact Time' system. When you confirm a PayID payment, I'll record the exact second for the owner. No need to take slip photos anymore; the owner can just check their bank app against my recorded time!"));
+      setNongSomMessage(t('พี่แสนคะ หนูทำระบบ "จดเวลาเป๊ะๆ" ให้แล้วนะ พอพี่กดรับเงิน PayID ปุ๊บ หนูจะแอบจดวินาทีที่เงินเข้าไว้ให้ป้าทันที พี่ไม่ต้องเสียเวลาถ่ายรูปสลิปให้ห่วงค่ะ ป้าไปเช็คในแอปแบงค์ตอนไหนก็เจอ เพราะเวลาหนูแก้ไม่ได้ค่ะ!', "Master Admin, I've added the 'Exact Time' system. When you confirm a PayID payment, I'll record the exact second for the owner. No need to take slip photos anymore; the owner can just check their bank app against my recorded time!"));
     } else if (activeTab === 'summary') {
-      setMiraMessage(t('คุณป้าคะ หนูสรุปยอดมาให้แล้วค่ะ พร้อมระบบตรวจสอบ PayID แบบใหม่ ป้าเทียบเวลากับแอปธนาคารได้เลยนะคะ ตรงกันเป๊ะแน่นอนค่ะ!', "Owner, here is your summary with the new PayID audit system. You can compare the recorded times with your bank app for perfect accuracy!"));
+      setNongSomMessage(t('คุณป้าคะ หนูสรุปยอดมาให้แล้วค่ะ พร้อมระบบตรวจสอบ PayID แบบใหม่ ป้าเทียบเวลากับแอปธนาคารได้เลยนะคะ ตรงกันเป๊ะแน่นอนค่ะ!', "Owner, here is your summary with the new PayID audit system. You can compare the recorded times with your bank app for perfect accuracy!"));
     } else if (activeTab === 'alerts' && newAlertsCount > 0) {
-      setMiraMessage(t('คุณพี่คะ คุณพี่หมอแจ้งว่าของบางอย่างใกล้หมดแล้ว ลองเช็คดูที่หน้าแจ้งเตือนนะคะ', "Owner, the staff reported that some items are running low. Please check the alerts page."));
+      setNongSomMessage(t('คุณพี่คะ คุณพี่หมอแจ้งว่าของบางอย่างใกล้หมดแล้ว ลองเช็คดูที่หน้าแจ้งเตือนนะคะ', "Owner, the staff reported that some items are running low. Please check the alerts page."));
     }
   }, [activeTab, summary.total, newAlertsCount]);
 
@@ -722,9 +732,9 @@ export default function OwnerDashboard() {
         </div>
       </div>
 
-      {/* Chapter99 Solution (by Nong Mira) Action Prompt (Toast Notification) */}
-      <AnimatePresence>
-        {miraMessage && (
+      {/* Removed Nong Som Action Prompt */}
+      {/* <AnimatePresence>
+        {nongSomMessage && (
           <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
@@ -735,18 +745,18 @@ export default function OwnerDashboard() {
               <Heart size={20} className="md:size-24" fill="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-xs md:text-sm leading-tight font-sans break-words">{miraMessage}</p>
-              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Chapter99 Solution (by Nong Mira)</p>
+              <p className="text-white font-bold text-xs md:text-sm leading-tight font-sans break-words">{nongSomMessage}</p>
+              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Chapter99 Solution (by Nong Som)</p>
             </div>
             <button 
-              onClick={() => setMiraMessage(null)}
+              onClick={() => setNongSomMessage(null)}
               className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-colors"
             >
               <X size={18} />
             </button>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative">
@@ -822,26 +832,29 @@ export default function OwnerDashboard() {
                       <div className="space-y-6">
                         <label className="text-[10px] font-black uppercase tracking-[0.5em] text-primary/60">{t('ผลลัพธ์ (คัดลอกไปใช้ได้เลย)', 'RESULT (COPY & USE)')}</label>
                         <div className="ai-glowing-box p-8 h-[500px] overflow-y-auto custom-scrollbar group">
-                          {generatedPost ? (
+                          {generatedPost.length > 0 ? (
                             <div className="space-y-12">
-                              {generatedPost.split('---\n\n').map((post, idx) => (
+                              {generatedPost.map((post, idx) => (
                                 <div key={idx} className="space-y-6 relative pb-12 border-b-2 border-white/5 last:border-b-0 last:pb-0">
                                   <div className="flex items-center justify-between sticky top-0 bg-navy py-4 z-10 transition-all border-b border-white/5">
                                     <div className="flex flex-col">
-                                      <span className="text-[10px] font-black text-primary uppercase tracking-widest">AU/NZ MARKETING STYLE {idx + 1}</span>
+                                      <span className="text-[10px] font-black text-primary uppercase tracking-widest">{post.title}</span>
                                       <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1">Generated by Wellness AI Pro</span>
                                     </div>
                                     <button 
                                       onClick={() => {
-                                        copyToClipboard(post);
-                                        setMiraMessage(t('คัดลอกคอนเทนต์แล้วค่ะ ป้าเอาไปวางใน Facebook ได้เลย! 🍊', 'Content copied! You can paste it on Facebook now! 🍊'));
+                                        copyToClipboard(post.content);
+                                        setNongSomMessage(t('คัดลอกคอนเทนต์แล้วค่ะ พี่เอาไปวางใน Facebook ได้เลย! 🍊', 'Content copied! You can paste it on Facebook now! 🍊'));
                                       }}
                                       className="copy-button-glow flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary hover:bg-primary hover:text-navy rounded-2xl text-xs font-black transition-all shadow-xl"
                                     >
                                       <Copy size={16} /> {t('คัดลอกคอนเทนต์', 'COPY CONTENT')}
                                     </button>
                                   </div>
-                                  <p className="text-xl text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">{post}</p>
+                                  <p className="text-xl text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">{post.content}</p>
+                                  <div className="bg-primary/5 p-6 rounded-2xl border border-primary/20">
+                                    <p className="text-primary font-bold text-sm italic">{post.recommendation}</p>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -882,9 +895,9 @@ export default function OwnerDashboard() {
                 <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
                   <button 
                     onClick={() => setIsSocialGenOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-2xl font-bold hover:bg-blue-600 hover:text-white transition-all shadow-lg text-xs shrink-0"
+                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white border border-blue-500 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg text-xs shrink-0"
                   >
-                    <Share2 size={16} /> {t('ผู้ช่วยการตลาด', 'Marketing Assistant')}
+                    <Share2 size={16} /> Marketing Assistant
                   </button>
                   <div className="flex items-center gap-4 bg-slate-800 p-2 rounded-[2rem] border-2 border-slate-700 shadow-2xl">
                     <button 
@@ -1363,7 +1376,7 @@ export default function OwnerDashboard() {
                   <button 
                     onClick={() => {
                       window.print();
-                      setMiraMessage(t('กำลังเตรียมไฟล์สรุปรายได้และภาษีให้คุณป้านะคะ 🍊', 'Preparing income and tax summary for you. 🍊'));
+                      setNongSomMessage(t('กำลังเตรียมไฟล์สรุปรายได้และภาษีให้พี่นะคะ 🍊', 'Preparing income and tax summary for you. 🍊'));
                     }}
                     className="w-full md:w-auto px-16 py-8 bg-[#D4AF37] text-slate-900 rounded-[3rem] font-black text-xl md:text-2xl uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-[#D4AF37]/30 flex items-center justify-center gap-6 group"
                   >
@@ -2023,7 +2036,7 @@ export default function OwnerDashboard() {
                     }
                     setEditingStaff(null);
                     setIsAddingNewStaff(false);
-                    setMiraMessage(isAddingNewStaff ? t('เพิ่มพนักงานใหม่เรียบร้อยแล้วค่ะ', 'New staff added successfully.') : t('อัปเดตข้อมูลพี่หมอเรียบร้อยแล้วค่ะ', 'Staff information updated successfully.'));
+                    setNongSomMessage(isAddingNewStaff ? t('เพิ่มพนักงานใหม่เรียบร้อยแล้วค่ะ', 'New staff added successfully.') : t('อัปเดตข้อมูลพี่หมอเรียบร้อยแล้วค่ะ', 'Staff information updated successfully.'));
                   }}
                   className="w-full py-4 bg-primary text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:opacity-90 transition-all shadow-lg"
                 >
@@ -2108,7 +2121,7 @@ export default function OwnerDashboard() {
                   <button 
                     onClick={() => {
                       window.print();
-                      setMiraMessage(t('กำลังเตรียมพิมพ์รายงานให้คุณพี่นะคะ', 'Preparing to print the report for you.'));
+                      setNongSomMessage(t('กำลังเตรียมพิมพ์รายงานให้พี่ๆ นะคะ 🍊', 'Preparing to print the report for you. 🍊'));
                     }}
                     className="flex-1 py-4 bg-slate-800 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-700 transition-all border border-slate-700 flex items-center justify-center gap-2"
                   >
@@ -2535,7 +2548,7 @@ export default function OwnerDashboard() {
                   <button 
                     onClick={() => {
                       window.print();
-                      setMiraMessage(t('หนูเตรียมไฟล์สรุปให้แล้วนะคะ คุณป้าสามารถสั่งพิมพ์หรือบันทึกเป็น PDF ได้เลยค่ะ', "I've prepared the summary file. You can print it or save it as a PDF now."));
+                      setNongSomMessage(t('หนูเตรียมไฟล์สรุปให้แล้วนะคะ พี่สามารถสั่งพิมพ์หรือบันทึกเป็น PDF ได้เลยค่ะ', "I've prepared the summary file. You can print it or save it as a PDF now."));
                     }}
                     className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                   >
@@ -2544,7 +2557,7 @@ export default function OwnerDashboard() {
                   </button>
                   <button 
                     onClick={() => {
-                      setMiraMessage(t('ส่งข้อมูลสรุปเข้า Line ให้คุณป้าเรียบร้อยแล้วนะคะ!', "The summary has been sent to your Line!"));
+                      setNongSomMessage(t('ส่งข้อมูลสรุปเข้า Line ให้พี่เรียบร้อยแล้วนะคะ!', "The summary has been sent to your Line!"));
                     }}
                     className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
                   >

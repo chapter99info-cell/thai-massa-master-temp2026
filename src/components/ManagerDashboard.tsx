@@ -1,3 +1,4 @@
+import { GoogleGenAI } from "@google/genai";
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -114,9 +115,45 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [newExpense, setNewExpense] = useState({ description: '', amount: 0, category: 'Supplies' });
   const [isAiScanning, setIsAiScanning] = useState(false);
+  const [isAiProcessingMarketing, setIsAiProcessingMarketing] = useState(false);
   const [marketingInput, setMarketingInput] = useState('');
   const [marketingOutput, setMarketingOutput] = useState('');
-  const [isAiProcessingMarketing, setIsAiProcessingMarketing] = useState(false);
+  const generateMarketingPost = async () => {
+    setIsAiProcessingMarketing(true);
+    setMarketingOutput('');
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      // Updated prompt to ask for tips and structure the response
+      const prompt = `ในฐานะ "น้องส้ม" เลขาส่วนตัวอัจฉริยะ ช่วยเปลี่ยนไอเดียภาษาไทยนี้: "${marketingInput}" ให้เป็น Content ภาษาอังกฤษระดับพรีเมียม (Luxury) สำหรับโพสต์ลง Social Media ของร้าน ${storeConfig.storeName} ที่ Sydney โดยใช้โทนเสียงแบบ ${settings.toneOfVoice || 'Warm and Professional'}.
+
+      โครงสร้างที่ต้องการ:
+      1. Premium English Caption (Luxury & Professional)
+      2. Recommended Visual Tips: (คำแนะนำสั้นๆ ว่าต้องใช้รูปภาพหรือวิดีโอแบบไหน เพื่อให้ดูหรูหราที่สุด)
+
+      ใส่ Hashtag ที่เกี่ยวข้องและปิดท้ายด้วย 🍊🧡 ทุกครั้ง`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          systemInstruction: "คุณคือ 'น้องส้ม' (Nong Som) ผู้เชี่ยวชาญด้านการตลาด Wellness และ Restaurant ระดับพรีเมียม คุณเรียกตัวเองว่า 'น้องส้ม' และเรียกผู้ใช้งานว่า 'พี่' เสมอ คุณเก่งเรื่องการเขียน Content ภาษาอังกฤษที่ดูแพง หรูหรา ใส่ใจรายละเอียด และสร้างภาพลักษณ์อันโดดเด่นให้ร้านอาหารหรือร้านนวดใน Sydney",
+        }
+      });
+
+      const text = response.text;
+      if (text) {
+        setMarketingOutput(text);
+        setSomMessage(t('ปั่น Content หรูๆ พร้อม Tips ถ่ายรูปให้แล้วค่ะพี่! กด Copy ไปโพสต์ได้เลย (Chop the Money!) 🍊', 'Premium content with visual tips generated! Copy and post it now! 🍊'));
+      } else {
+        setMarketingOutput("ขอโทษทีค่ะพี่ น้องส้มขัดข้องนิดหน่อย ลองใหม่อีกทีนะคะ 🍊");
+      }
+    } catch (error) {
+      console.error("AI Marketing Error:", error);
+      setMarketingOutput("พี่คะ น้องส้มเหนื่อยนิสนึง ขอพักแป๊บนะคะ หรือพี่ลืมใส่ API Key หรือเปล่าคะ? 🍊");
+    } finally {
+      setIsAiProcessingMarketing(false);
+    }
+  };
   const [monthlySummary, setMonthlySummary] = useState<{
     count: number;
     totalRevenue: number;
@@ -655,105 +692,27 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
           </div>
         </div>
 
-        {/* Tab Navigation - Center */}
-        <div className="flex bg-white/10 p-2.5 rounded-[3.5rem] border border-white/20 shadow-2xl backdrop-blur-xl">
-          <button
-            onClick={() => setActiveTab('control')}
-            className={cn(
-              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
-              activeTab === 'control' 
-                ? "bg-gold text-navy shadow-2xl scale-110" 
-                : "text-white/60 hover:text-white"
-            )}
-          >
-            <LayoutGrid size={24} />
-            <span>{t('🛏️ Board', 'Control')}</span>
+        {/* Mini Bar Navigation */}
+        <div className="flex bg-white/10 p-1.5 rounded-[2rem] border border-white/20 backdrop-blur-xl shrink-0 gap-1 overflow-x-auto">
+          <button onClick={() => setActiveTab('calendar')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'calendar' ? "bg-gold text-navy" : "text-white/70 hover:bg-white/10")}>
+            {t('MANAGE STAFF', 'MANAGE STAFF')}
           </button>
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={cn(
-              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
-              activeTab === 'calendar' 
-                ? "bg-gold text-navy shadow-2xl scale-110" 
-                : "text-white/60 hover:text-white"
-            )}
-          >
-            <Clock size={24} />
-            <span>{t('📅 Calendar', 'Staff')}</span>
+          <button onClick={() => setActiveTab('control')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'control' ? "bg-gold text-navy" : "text-white/70 hover:bg-white/10")}>
+            {t('OVERVIEW', 'OVERVIEW')}
           </button>
-          <button
-            onClick={() => setActiveTab('crm')}
-            className={cn(
-              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
-              activeTab === 'crm' 
-                ? "bg-gold text-navy shadow-2xl scale-110" 
-                : "text-white/60 hover:text-white"
-            )}
-          >
-            <Users size={24} />
-            <span>{t('👥 CRM', 'Guests')}</span>
+          <button onClick={() => generateMonthlySummary()} className="px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest text-white/70 hover:bg-white/10 transition-all">
+            {t('SUMMARY', 'SUMMARY')}
           </button>
-          <Link
-            to="/manager-insights"
-            className="px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 text-white/60 hover:text-white"
-          >
-            <TrendingUp size={24} />
-            <span>{t('📈 Insights', 'Insights')}</span>
-          </Link>
-          <button
-            onClick={() => setActiveTab('payments')}
-            className={cn(
-              "px-12 py-5 rounded-[3rem] text-sm md:text-xl font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3",
-              activeTab === 'payments' 
-                ? "bg-gold text-navy shadow-2xl scale-110" 
-                : "text-white/60 hover:text-white"
-            )}
-          >
-            <DollarSign size={24} />
-            <span>{t('💰 Sales', 'Revenue')}</span>
+          <button onClick={() => setShowAlerts(true)} className="relative px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest text-white/70 hover:bg-white/10 transition-all">
+            {t('ALERTS', 'ALERTS')}
+            {newAlertsCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
           </button>
-          {(accessLevel === 'owner' || accessLevel === 'admin') && (
-            <button
-              onClick={() => setActiveTab('marketing')}
-              className={cn(
-                "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
-                activeTab === 'marketing' 
-                  ? "bg-indigo-500 text-white shadow-2xl scale-105" 
-                  : "text-white/50 hover:text-white"
-              )}
-            >
-              <Sparkles size={18} />
-              <span>{t('✨ Marketing', 'Marketing')}</span>
-            </button>
-          )}
-          {(accessLevel === 'owner' || accessLevel === 'admin') && (
-            <button
-              onClick={() => setActiveTab('expenses')}
-              className={cn(
-                "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
-                activeTab === 'expenses' 
-                  ? "bg-rose-500 text-white shadow-2xl scale-105" 
-                  : "text-white/50 hover:text-white"
-              )}
-            >
-              <Wallet size={18} />
-              <span>{t('🧾 Expenses', 'Expenses')}</span>
-            </button>
-          )}
-          {(accessLevel === 'owner' || accessLevel === 'admin') && (
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={cn(
-                "px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2",
-                activeTab === 'audit' 
-                  ? "bg-indigo-500 text-white shadow-2xl scale-105" 
-                  : "text-white/50 hover:text-white"
-              )}
-            >
-              <ShieldCheck size={18} />
-              <span>{t('🛡️ Audit', 'Security')}</span>
-            </button>
-          )}
+          <button onClick={() => setActiveTab('crm')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'crm' ? "bg-gold text-navy" : "text-white/70 hover:bg-white/10")}>
+            {t('CRM', 'CRM')}
+          </button>
+          <button onClick={() => setActiveTab('marketing')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'marketing' ? "bg-indigo-400 text-white" : "text-white/70 hover:bg-white/10")}>
+            {t('AI MARKETING', 'AI MARKETING')}
+          </button>
         </div>
         
         <div className="flex items-center gap-4">
@@ -1099,14 +1058,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     />
                     <button 
                       disabled={!marketingInput || isAiProcessingMarketing}
-                      onClick={() => {
-                        setIsAiProcessingMarketing(true);
-                        setTimeout(() => {
-                           setMarketingOutput(`Experience the ultimate serenity at ${storeConfig.storeName} Altona. Our highly skilled therapists deliver an authentic Thai healing tradition tailored for your modern lifestyle. Indulge in premium wellness that transcends expectations. ✨💆‍♀️ #PremiumThaiWellness #AltonaMassage #NongSomAI`);
-                           setIsAiProcessingMarketing(false);
-                           setSomMessage(t('ปั่น Content หรูๆ ให้แล้วค่ะพี่! กด Copy ไปโพสต์ได้เลย (Chop the Money!) 🍊', 'Premium content generated! Copy and post it now! 🍊'));
-                        }, 2000);
-                      }}
+                      onClick={generateMarketingPost}
                       className={cn(
                         "w-full py-4 bg-indigo-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
                         (!marketingInput || isAiProcessingMarketing) ? "opacity-50 grayscale cursor-not-allowed" : "hover:scale-105 active:scale-95 shadow-xl shadow-indigo-900/20"
@@ -1117,28 +1069,34 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     </button>
                   </div>
 
-                  <div className="space-y-4">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60">{t('Luxury Result / ผลลัพธ์ระดับพรีเมียม', 'Luxury Result')}</label>
-                    <div className="w-full h-48 bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 text-indigo-100 text-sm leading-relaxed overflow-y-auto italic font-serif relative group">
-                      {marketingOutput || (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
-                           <ImageIcon size={32} className="mb-2" />
-                           <p className="text-[10px] font-black uppercase tracking-widest">Waiting for input...</p>
-                        </div>
-                      )}
-                      {marketingOutput && (
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(marketingOutput);
-                            setSomMessage(t('คัดลอกเรียบร้อยค่ะ! 🍊', 'Copied to clipboard! 🍊'));
-                          }}
-                          className="absolute top-4 right-4 p-2 bg-indigo-500/20 hover:bg-indigo-500 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      )}
+                    <div className="space-y-4">
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60">{t('Luxury Result / ผลลัพธ์ระดับพรีเมียม', 'Luxury Result')}</label>
+                      <div className="w-full h-48 relative group">
+                        {marketingOutput ? (
+                          <>
+                            {/* Glowing Gold Border Container */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#B8962E] to-[#F5F5DC] rounded-3xl blur-[1px]" />
+                            <div className="relative m-[1px] h-[calc(100%-2px)] bg-[#0A0D17] border border-indigo-500/20 rounded-[1.4rem] p-6 text-indigo-100 text-sm leading-relaxed overflow-y-auto italic font-serif shadow-[0_0_20px_rgba(184,150,46,0.2)] whitespace-pre-wrap">
+                              {marketingOutput}
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(marketingOutput);
+                                  setSomMessage(t('คัดลอกเรียบร้อยค่ะ! 🍊', 'Copied to clipboard! 🍊'));
+                                }}
+                                className="absolute top-4 right-4 p-2 bg-gold/20 hover:bg-gold text-white hover:text-navy rounded-lg transition-all shadow-[0_0_10px_rgba(184,150,46,0.3)]"
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 flex flex-col items-center justify-center text-slate-600 opacity-50">
+                             <ImageIcon size={32} className="mb-2" />
+                             <p className="text-[10px] font-black uppercase tracking-widest">Waiting for input...</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
                </div>
             </div>
           </div>
@@ -1618,38 +1576,18 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
       </div>
 
       {/* Floating Action Buttons (FABs) Stack - Moved outside scrollable area and adjusted for mobile nav */}
-      <div className="fixed bottom-28 right-6 md:bottom-10 md:right-10 z-50 flex flex-col items-center gap-3 md:gap-4 no-print">
-        {/* Nong Som AI Button */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => window.dispatchEvent(new CustomEvent('open-nong-som'))}
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-orange-500 shadow-xl flex items-center justify-center border-2 border-orange-500/20 hover:bg-orange-50/50 transition-colors group scale-85 md:scale-100"
-        >
-          <div className="relative">
-            <Sparkles size={18} className="md:size-6" fill="currentColor" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-orange-500 text-white rounded-full flex items-center justify-center border border-white">
-              <span className="text-[8px] md:text-[10px] font-black">🍊</span>
-            </div>
-          </div>
-          
-          {/* Tooltip/Message for Nong Som */}
-          <div className="absolute right-full mr-4 bg-white text-orange-600 p-3 rounded-2xl rounded-br-none shadow-xl border border-orange-500/10 text-[10px] font-bold w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
-            {t('พี่ๆ คะ น้องส้มทำระบบ "จดเวลาเป๊ะๆ" ให้แล้วนะ พอพี่กดรับเงิน PayID ปุ๊บ น้องส้มจะแอบจดวินาทีที่เงินเข้าไว้ให้พี่เจ้าของร้านทันทีเลยค่ะ พี่ไม่ต้องเสียเวลาถ่ายรูปสลิปให้วุ่นวายแล้วนะคะ! 🍊', "Master Admin, I've added the 'Exact Time' system. When you confirm a PayID payment, I'll record the exact second for the owner. No need to take slip photos anymore! 🍊")}
-          </div>
-        </motion.button>
-
-        {/* WALK-IN Button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsQuickAddOpen(true)}
-          className="w-16 h-16 md:w-20 md:h-20 gold-gradient text-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl flex flex-col items-center justify-center gap-0.5 md:gap-1 border-4 border-white/10 scale-85 md:scale-100"
-        >
-          <Plus size={24} className="md:size-32" strokeWidth={3} />
-          <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">Walk-in</span>
-        </motion.button>
-      </div>
+      {/* Removed Nong Som AI Button */}
+      
+      {/* WALK-IN Button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsQuickAddOpen(true)}
+        className="w-16 h-16 md:w-20 md:h-20 gold-gradient text-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl flex flex-col items-center justify-center gap-0.5 md:gap-1 border-4 border-white/10 scale-85 md:scale-100"
+      >
+        <Plus size={24} className="md:size-32" strokeWidth={3} />
+        <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">Walk-in</span>
+      </motion.button>
 
       {/* Staff Status & Break Management Modal */}
       <AnimatePresence>
@@ -3059,7 +2997,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
  
         <div className="text-center pt-8 border-t-2 border-black mt-8">
           <p className="font-black text-xs uppercase tracking-widest">Thank you for visiting!</p>
-          <p className="text-[8px] mt-2 opacity-60">Mira Thai Massage Sydney • ABN {storeConfig.abn}</p>
+          <p className="text-[8px] mt-2 opacity-60">{storeConfig.storeName} • {storeConfig.address} • ABN {storeConfig.abn}</p>
           <div className="mt-6 flex justify-center">
             <div className="w-20 h-20 border-4 border-black flex items-center justify-center p-2">
               <div className="w-full h-full bg-black/10 flex items-center justify-center text-[8px] font-black text-center leading-tight">

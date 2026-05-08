@@ -434,8 +434,8 @@ export default function StaffDashboard() {
         </div>
       </header>
 
-      {/* Nong Som Action Prompt (Toast Notification) */}
-      <AnimatePresence>
+      {/* Removed Nong Som Action Prompt */}
+      {/* <AnimatePresence>
         {somMessage && (
           <motion.div
             initial={{ opacity: 0, y: -100 }}
@@ -458,7 +458,7 @@ export default function StaffDashboard() {
             </button>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       <section className="space-y-4">
         <div className="flex items-center justify-between px-2">

@@ -1,0 +1,33 @@
+96:  const [somMessage, setSomMessage] = useState<string | null>(null);
+132:          systemInstruction: "คุณคือ 'น้องส้ม' (Nong Som) ผู้เชี่ยวชาญด้านการตลาด Wellness ระดับพรีเมียม คุณเรียกตัวเองว่า 'น้องส้ม' และเรียกผู้ใช้งานว่า 'พี่' เสมอ คุณเก่งเรื่องการเขียน Content ภาษาอังกฤษที่ดูแพง หรูหรา และน่าประทับใจสำหรับลูกค้าใน Sydney",
+139:        setSomMessage(t('ปั่น Content หรูๆ ให้แล้วค่ะพี่! กด Copy ไปโพสต์ได้เลย (Chop the Money!) 🍊', 'Premium content generated! Copy and post it now! 🍊'));
+238:      setSomMessage(t(`ว้าว! วันนี้เก็บเงินสดได้เยอะเลยค่ะพี่ (${formatCurrency(totalCashSales)}) อย่าลืมแบ่งไปฝากธนาคารให้ยอดตรงกับบัญชีนะคะ น้องส้มเป็นห่วงค่ะ! 🍊`, `Wow! You've collected a lot of cash today (${formatCurrency(totalCashSales)}). Don't forget to deposit it into the bank to match your accounting records! 🍊`));
+253:    setSomMessage(t('บันทึกรายจ่ายเรียบร้อยค่ะ! น้องส้มจะเก็บใบเสร็จนี้ไว้ให้พี่แสน (Master Admin) สรุปภาษีตอนสิ้นเดือนนะคะ 🍊', 'Expense recorded! I will keep this record for the Master Admin to summarize for tax at the end of the month. 🍊'));
+274:    setSomMessage(t('กำลังดึงข้อมูลการจองเพื่อสรุปยอดรายเดือนนะคะ รอแป๊บนึงค่ะ 🍊', 'Generating monthly summary... please wait. 🍊'));
+318:      setSomMessage(t('อุ๊ย! ดึงข้อมูลไม่สำเร็จค่ะ ลองตรวจสอบเน็ตดูอีกทีนะคะ 🍊', 'Failed to generate summary. Please check your connection. 🍊'));
+338:      setSomMessage(t('สรุปยอดส่งบัญชีเรียบร้อยแล้วค่ะ! พี่ไม่ต้องกังวลแล้วนะคะ 🍊', 'Monthly summary saved to Performance_Summary! 🍊'));
+341:      setSomMessage(t('บันทึกไม่สำเร็จค่ะ โถ่... ลองกดใหม่อีกทีนะคะพี่ 🍊', 'Failed to save summary. Please try again. 🍊'));
+389:        setSomMessage(suggestion);
+487:    setSomMessage(t(`คุณพี่คะ หนูใส่สีส้มไว้ที่เตียงที่นวดเสร็จแล้วแต่ยังไม่ได้เก็บเงินนะคะ พอคุณพี่ได้รับเงินแล้วกด "ยืนยันการชำระเงิน" หนูจะเปลี่ยนเป็นสีเขียวให้ทันทีค่ะ`, `I've marked the bed orange for unpaid sessions. Once you receive payment and click "Confirm Payment", I'll turn it green.`));
+508:      setSomMessage(t('ขออภัยค่ะพี่ ฟังก์ชันการเงินล็อคไว้เฉพาะ Manager/Owner นะคะ น้องส้มลงบันทึกไว้ให้พี่แสนดูแล้วค่ะ 🍊', 'Sorry, financial functions are restricted to Manager/Owner. I have logged this attempt for the owner. 🍊'));
+567:      setSomMessage(t(`บันทึกยอด PayID เรียบร้อย (เวลา ${exactTime}) น้องส้มจดวินาทีไว้ให้พี่เช็คแล้วค่ะ! 🍊`, `PayID payment recorded (Time: ${exactTime}). I've noted the exact second for the owner to check! 🍊`));
+569:      setSomMessage(t(`ชำระเงินเรียบร้อยแล้วค่ะ! น้องส้มเตรียมร่างอีเมลส่งใบเสร็จ Remedial Massage สำหรับเคลมประกันให้ลูกค้าแล้วนะคะ พี่แสนกดเปิด Nong Som เพื่อดูดราฟต์ได้เลยค่ะ 🍊`, `Payment successful! I've prepared a draft email with the Remedial Massage receipt for the customer's insurance claim. Ask me to see the draft! 🍊`));
+571:      setSomMessage(t('บันทึกการชำระเงินเรียบร้อยแล้วค่ะพี่! 🍊', 'Payment recorded successfully! 🍊'));
+655:    setSomMessage(t('จ่ายเงินเรียบร้อยแล้วค่ะพี่! เตียงพร้อมรับแขกใหม่แล้วนะคะ 🍊', 'Payment successful! The bed is now vacant and ready for the next customer. 🍊'));
+792:              setSomMessage(t('พี่ค่ะ ยื่นหน้าจอนี้ให้ลูกค้าลงทะเบียนได้เลยนะคะ ข้อมูลสุขภาพลูกค้าจะไหลเข้าระบบ CRM น้องส้มสวยๆ เลยค่ะ! 🍊', 'P\'... Hand this to the customer for registration. Their health data will sync perfectly to CRM! 🍊'));
+833:              <p className="text-[8px] md:text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Nong Som (น้องส้ม) 🍊</p>
+836:              onClick={() => setSomMessage(null)}
+1013:                                   onClick={() => setSomMessage(`พี่คะ! ส่งโปรโมชั่น 'Relax & Recharge' ให้พี่ ${customer.name} ดีมั้ยคะ? ลด 15% รับรองแขกกลับมาคึกคักแน่นอนค่ะ 🍊`)}
+1155:                                  setSomMessage(t('คัดลอกเรียบร้อยค่ะ! 🍊', 'Copied to clipboard! 🍊'));
+1194:                        setSomMessage(t('กำลังเปิดระบบ AI Bulk Scan... กรุณารอสักครู่นะคะพี่ 🍊', 'Opening AI Bulk Scan system... Please wait a moment! 🍊'));
+1197:                           setSomMessage(t('ระบบ AI Scan พร้อมแล้วค่ะ! พี่สามารถอัปโหลดรูปใบเสร็จหลายๆ ใบพร้อมกันได้เลยค่ะ เดี๋ยวส้มสรุปให้ 🍊', 'AI Scan ready! You can upload multiple receipt photos at once, I will summarize them for you! 🍊'));
+1651:        {/* Nong Som AI Button */}
+1665:          {/* Tooltip/Message for Nong Som */}
+1721:                      {t('มีพนักงานบางคนประกันมือหมดอายุแล้วนะคะ รบกวนตรวจสอบในตารางด้านล่างด้วยค่ะ', 'Some staff have expired insurance. Please check the list below.')}
+1858:                    <span className="text-sm font-black uppercase tracking-[0.3em]">{t('Nong Som\'s Note', 'Smart Advice')}</span>
+1960:                          {t('พี่ๆ คะ... น้องส้มแนะนำคนว่างคิวแรกให้แล้วนะคะ! 🍊', 'Tip: Nong Som recommends the first available staff! 🍊')}
+2122:                {/* Nong Som Guidance */}
+2368:                            setSomMessage(t('น้องส้มรับทราบปัญหาแล้วค่ะ เดี๋ยวจะรีบบอกพี่เจ้าของร้านให้นะคะ 🍊', "Nong Som acknowledged the issue! I'll let the owner know. 🍊"));
+2482:                {/* Nong Som Help */}
+2633:                        setSomMessage(t('ส่งใบเสร็จไปที่อีเมล {email} สำเร็จแล้วค่ะ! 🍊', `Receipt sent to email! 🍊`).replace('{email}', paymentSession.currentCustomer || 'Customer'));
+2845:                    setSomMessage(t('ส่งใบเสร็จไปที่อีเมล {email} สำเร็จแล้วค่ะ! 🍊', `Receipt sent to email! 🍊`).replace('{email}', selectedHistoryBooking.customerName));

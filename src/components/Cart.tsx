@@ -47,6 +47,11 @@ export default function Cart() {
   
   // Payment Step State
   const [paymentOption, setPaymentOption] = useState<'clinic' | 'online'>('clinic');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  
+  const isFormValid = customerName.trim() !== '' && customerPhone.trim() !== '';
 
   const depositAmount = 20.00;
   const systemFeeRate = 0.005;
@@ -81,7 +86,9 @@ export default function Cart() {
     const availableBed = beds.find(b => b.status === 'Vacant' && b.type === serviceType);
 
     const bookingData = {
-      customerName: 'Guest Customer', // In a real app, get from auth or form
+      customerName: customerName,
+      customerPhone: customerPhone,
+      customerEmail: customerEmail,
       serviceName: cart[0].name,
       serviceEnglishName: cart[0].englishName,
       therapistName: cart[0].therapist?.name || 'Any Available',
@@ -345,22 +352,7 @@ export default function Cart() {
                 <ChevronRight size={20} />
               </button>
             </div>
-          </motion.div>
-        )}
-
-        {step === 'payment' && (
-          <motion.div
-            key="payment"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="space-y-8"
-          >
-            <header className="text-center">
-              <h2 className="text-3xl font-serif font-bold text-charcoal">Payment & Confirmation</h2>
-              <p className="text-accent/60 text-sm uppercase tracking-widest font-bold">Finalize your premium experience</p>
-            </header>
-
+            
             {/* Booking Summary Card */}
             <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-primary/10 space-y-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-5">
@@ -416,6 +408,22 @@ export default function Cart() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Customer Information Card */}
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-primary/10 space-y-6">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Customer Information</h3>
+              <div className="space-y-4">
+                <input type="text" placeholder="Full Name *" value={customerName} onChange={e => setCustomerName(e.target.value)}
+                  className="w-full p-4 bg-cream/50 rounded-2xl border border-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/20 text-charcoal font-bold"
+                />
+                <input type="tel" placeholder="Phone Number *" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
+                  className="w-full p-4 bg-cream/50 rounded-2xl border border-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/20 text-charcoal font-bold"
+                />
+                <input type="email" placeholder="Email (Optional)" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)}
+                  className="w-full p-4 bg-cream/50 rounded-2xl border border-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/20 text-charcoal font-bold"
+                />
               </div>
             </div>
 
@@ -512,10 +520,10 @@ export default function Cart() {
               {/* Confirm Button with Golden Glow */}
               <button
                 onClick={handleConfirmBooking}
-                disabled={isProcessing}
+                disabled={isProcessing || !isFormValid}
                 className={cn(
                   "w-full py-5 gold-gradient text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-xs shadow-2xl relative overflow-hidden group transition-all active:scale-95",
-                  isProcessing ? "opacity-70 cursor-not-allowed" : "hover:shadow-[0_0_30px_rgba(225,212,182,0.5)]"
+                  (isProcessing || !isFormValid) ? "opacity-70 cursor-not-allowed" : "hover:shadow-[0_0_30px_rgba(225,212,182,0.5)]"
                 )}
               >
                 {/* Thai Pattern Accent (Simulated with CSS/SVG) */}

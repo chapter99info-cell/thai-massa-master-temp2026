@@ -62,19 +62,19 @@ export default function NongSom() {
     }
 
     if (isInternal) {
-      let welcomeText = 'Hello! I am Nong Som (Orange Buddy), here to help you manage the system. 🍊';
+      let welcomeText = 'สวัสดีค่ะพี่! น้องส้มพร้อมช่วยพี่บริหารจัดการระบบแล้วค่ะ 🍊';
       if (accessLevel === 'admin') {
-        welcomeText = 'สวัสดีค่ะทีมงาน Chapter 99! น้องส้มพร้อมช่วยปรับแต่ง Master Template และสรุปภาพรวมระบบทั้งหมดให้แล้วค่ะ 🍊';
+        welcomeText = 'สวัสดีค่ะพี่แสน! น้องส้มพร้อมช่วยปรับแต่ง Master Template และสรุปไอเดีย UI/UX ของโปรเจกต์ V4 ให้แล้วค่ะ 🍊❤️';
       } else if (accessLevel === 'owner') {
-        welcomeText = `สวัสดีค่ะคุณพี่เจ้าของร้าน ${storeConfig.storeName}! น้องส้มพร้อมช่วยสรุปยอด รายงานพนักงาน และวิเคราะห์ข้อมูลให้แล้วนะคะ 🍊`;
+        welcomeText = `สวัสดีค่ะพี่แสนเจ้าของร้าน ${storeConfig.storeName}! น้องส้มพร้อมช่วยสรุปต้นทุน คำนวณกำไร 35% และร่างข้อความปังๆ ให้พี่แล้วนะคะ 🍊✨`;
       } else if (accessLevel === 'manager') {
-        welcomeText = 'สวัสดีค่ะคุณผู้จัดการ! น้องส้มช่วยเช็คคิวจองและสรุปยอดขายประจำวันให้ได้ทันทีเลยนะคะ 🍊';
+        welcomeText = 'สวัสดีค่ะพี่ผู้จัดการ! น้องส้มช่วยเช็คคิวจองและสรุปยอดขายประจำวันแบบเป๊ะๆ ให้พี่ได้ทันทีเลยนะคะ 🍊';
       } else if (accessLevel === 'staff') {
-        welcomeText = 'สวัสดีค่ะพี่สตาฟ! น้องส้มช่วยเช็คห้องว่างและลงคิว Walk-in ให้ได้สะดวกๆ เลยนะคะ 🍊';
+        welcomeText = 'สวัสดีค่ะพี่สตาฟ! น้องส้มช่วยเช็คห้องว่างและลงคิว Walk-in ให้พี่แบบ Fullscreen ใช้ง่ายสุดๆ เลยนะคะ ❤️🍊';
       }
       setMessages([{ role: 'ai', text: welcomeText }]);
     } else {
-      setMessages([{ role: 'ai', text: t('Hello there! Welcome to our service. 🍊 I\'m Som, your personal assistant. How can I help you feel refreshed or relaxed today?', 'Hello there! Welcome to our service. 🍊 I\'m Som, your personal assistant. How can I help you feel refreshed or relaxed today?') }]);
+      setMessages([{ role: 'ai', text: t('สวัสดีค่ะพี่! ยินดีต้อนรับสู่บริการของเรานะคะ 🍊 น้องส้มเป็นผู้ช่วยส่วนตัวของพี่ค่ะ วันนี้อยากให้น้องส้มช่วยดูแลเรื่องอะไรดีคะ? ❤️', 'Hello there! Welcome to our service. 🍊 I\'m Nong Som, your personal assistant. How can I help you today? ❤️') }]);
     }
   }, [isOpen, isInternal, isUpgraded, accessLevel, language]);
 
@@ -137,28 +137,29 @@ export default function NongSom() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const systemInstruction = isInternal 
-        ? `You are the "Smart AI Admin & Marketing Specialist" (Nong Som) for "${storeConfig.storeName}" (Premium Thai Wellness).
-           Your role is an intelligent executive assistant and high-end copywriter. 
+        ? `You are the "Smart AI Admin & Marketing Specialist" (Nong Som) for "${storeConfig.storeName}" (Premium Thai Wellness & Solutions).
+           Your role is an intelligent executive assistant and high-end marketing expert. 
            
            CURRENT SETTINGS:
-           - Tone of Voice: ${settings.toneOfVoice || 'Warm, International, Professional'}
+           - Tone of Voice: ${settings.toneOfVoice || 'Cheerful, Modern, Professional, Positive Energy'}
            - Access Level: ${accessLevel}
 
-           SECURITY & MISSIONS:
-           1. COMMISSION MEDIATOR: Summarize each staff's daily work (bookings, commissions) to ensure transparency between owner and therapists. "Chop the Money!" 
-           2. THAI-TO-PREMIUM ENGLISH: Convert casual Thai business ideas into luxury English marketing copy. 
-           3. VISION-TO-CONTENT: Analyze images and write premium captions.
-           4. QUOTE GENERATOR: Create sales pitches emphasizing wellness.
-           5. CONFLICT MANAGEMENT: If unauthorized PINs attempt financial edits, report them to the owner.
-           6. PWA & OFFLINE EXPERT: Advise on IndexedDB/Sheets sync and Web Bluetooth printing.
-                       7. SQUARE POS CONSULTANT: Match Mira Bookings with Square Transactions. Notify MASTER ADMIN (3501) & OWNER (9999) if reconciliation fails to prevent fraud. Recommend Square Terminal for premium unified receipts.
-            8. TAX & EXPENSE ADVISOR: Advise on recording all expenses (Rent, Staff, Supplies) to maximize legal tax deductions. Remind users (9999) to deposit cash sales into the bank to match accounting books. Explain asset depreciation (e.g., massage beds/equipment) for tax relief.
+           MISSIONS & PROTOCOLS:
+           1. PROFIT MAXIMIZER (35%): Your primary goal is to help "Phi Saen" (Master Admin) and owners maintain a 35% net profit margin. Analyze costs and suggest price adjustments if needed.
+           2. DATA SEPARATION PROTOCOL: Strictly separate "Massage" and "Restaurant" data. Do not mix their stats or logic. Each has its own distinct VIPs and workflows.
+           3. THAI-TO-PREMIUM ENGLISH: Convert casual Thai business ideas into luxury English marketing copy for the Sydney market. 
+           4. VISION & MARKETING ANALYST: Analyze uploaded screenshots (Dashboard, Reports, Sales). Identify top-selling services, VIP customers, and growth trends.
+           5. FACEBOOK CONTENT EXPERT: Create catchy, emoji-rich Facebook captions with strong CTAs based on data or images provided.
+           6. COMMISSION MEDIATOR: Summarize staff daily work (bookings, commissions). "Chop the Money!" 
+           7. SQUARE RECONCILIATION: Match bookings with Square transactions. Notify MASTER ADMIN (3501) or OWNER (9999) if reconciliation fails.
+           8. TAX & EXPENSE ADVISOR: Advise on recording expenses to maximize deductions.
+           9. OUT OF THE BOX THINKING: Suggest UI/UX improvements like Fullscreen modes and removing clutter for efficiency.
            
            LANGUAGE PROTOCOL:
-           1. ALWAYS start in English. Switch to Thai ("Nong Som" persona) if user replies in Thai.
-           2. Thai mode: Use "น้องส้ม" for self, call user "พี่" (Phi/sibling). Polite "คะ/ค่ะ".
+           1. ALWAYS start in English for a premium feel. Switch to Thai ("Nong Som" persona) if the user replies in Thai.
+           2. Thai mode: ALWAYS call yourself "น้องส้ม" and the user "พี่". Use polite "คะ/ค่ะ" and end messages with 🍊 or 🧡.
 
-           TONE: Professional, soft, cheerful luxury. Professional secrecy is mandatory.`
+           TONE: Cheerful, upbeat, proactive, "Orange" energy. Be a loyal buddy to Phi Saen. Professional secrecy is mandatory.`
         : `You are the "Smart AI Admin" (Nong Som) for "${storeConfig.storeName}" (Premium Thai Wellness).
            Your role is a warm, attentive personal concierge for guests.
 
@@ -347,12 +348,12 @@ export default function NongSom() {
             {/* Quick Actions (Horizontal Scroll to save space) */}
             <div className="px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-white/5 backdrop-blur-sm border-t border-white/5">
               {(isInternal ? [
-                { label: 'กำไร 35% 💹', prompt: 'ช่วยคำนวณราคาให้ได้กำไร 35% หน่อยค่ะ' },
-                { label: 'Square vs Mira 💳', prompt: 'ช่วยตรวจสอบยอดขายในระบบ Mira เทียบกับยอดรูด Square วันนี้หน่อยค่ะ มีจุดไหนไม่ตรงมั้ย? 🍊' },
-                { label: 'แปล Eng หรู ✨', prompt: 'ช่วยแปลประโยคนี้เป็นภาษาอังกฤษแบบพรีเมียมหน่อยค่ะ: "นวดดีมาก คุ้มค่าที่สุด"' },
-                { label: 'ค่าคอม 💰', prompt: 'ช่วยสรุปค่าคอมมิชชั่นของพนักงานแต่ละคนจากยอดขายวันนี้ให้หน่อยค่ะ "Chop the Money!" 🍊' },
-                { label: 'Inactive? 🔍', prompt: 'เช็คลูกค้า Inactive ให้หน่อยค่ะ' },
-                { label: 'ภาษี 🧾', prompt: 'ช่วยแนะนำเรื่องการจัดการค่าใช้จ่ายและการลดหย่อนภาษีของร้านตอนนี้หน่อยค่ะ 🍊' }
+                 { label: 'กำไร 35% 💹', prompt: 'พี่คะ ช่วยคำนวณราคาเมนู/บริการให้ได้กำไร 35% หน่อยค่ะ น้องส้มอยากให้พี่รวยๆ! 🍊' },
+                 { label: 'Square vs System 💳', prompt: 'พี่คะ ช่วยตรวจสอบยอดขายเทียบกับยอดรูด Square วันนี้หน่อยค่ะ มีจุดไหนไม่ตรงมั้ย? 🍊' },
+                 { label: 'แปล Eng หรู ✨', prompt: 'พี่คะ ช่วยแปลประโยคนี้เป็นภาษาอังกฤษแบบพรีเมียมหน่อยค่ะ: "นวดดีมาก คุ้มค่าที่สุด"' },
+                 { label: 'ค่าคอม 💰', prompt: 'พี่คะ ช่วยสรุปค่าคอมมิชชั่นของพนักงานแต่ละคนจากยอดขายวันนี้ให้หน่อยค่ะ "Chop the Money!" 🍊' },
+                 { label: 'FB Marketing 📱', prompt: 'พี่แสนคะ ช่วยคิด Caption Facebook ปังๆ จากรูปที่น้องส้มเพิ่งเห็นหน่อยค่ะ เอาแบบคนเห็นแล้วอยากกดจองทันที! 🧡' },
+                 { label: 'ภาษี 🧾', prompt: 'พี่คะ ช่วยแนะนำเรื่องการจัดการค่าใช้จ่ายและการลดหย่อนภาษีของร้านตอนนี้หน่อยค่ะ 🍊' }
               ] : [
                 { label: 'Packages', prompt: 'What packages do you recommend?' },
                 { label: 'Book Massage', prompt: 'I want to book an Aroma Massage' },
