@@ -63,5 +63,33 @@ export const aiMarketingService = {
     });
 
     return response.text || "ขอโทษทีค่ะพี่ น้องส้มขัดข้องนิดหน่อย ลองใหม่อีกทีนะคะ 🍊";
-}
+},
+  translateToEnglish: async (input: string, tone: string): Promise<{facebook: string, line: string, sms: string}> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    const prompt = `Translate the Thai marketing promotion: "${input}" into English.
+    Tone: "${tone}".
+    Create 3 versions based on the tone: Facebook post (with emojis and hashtags), LINE message (short and direct), and SMS message (very short and direct).
+    Return the result as a raw valid JSON object with keys: "facebook", "line", "sms".
+    Do not add any markup. Return JSON only.
+    Use this format for the response: {"facebook": "Facebook text here", "line": "Line text here", "sms": "SMS text here"}`;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+            systemInstruction: "You are a marketing expert. Translate the provided Thai marketing promotion into English, returning only a raw JSON object.",
+        }
+    });
+
+    if (!response.text) return {facebook: "Error", line: "Error", sms: "Error"};
+    
+    // Clean response just in case
+    const text = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    try {
+        return JSON.parse(text);
+    } catch {
+        return {facebook: "Error parsing JSON", line: "Error", sms: "Error"};
+    }
+  }
 };

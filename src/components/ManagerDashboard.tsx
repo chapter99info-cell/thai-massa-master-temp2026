@@ -680,9 +680,9 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
           <button onClick={() => setActiveTab('crm')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'crm' ? "bg-gold text-navy" : "text-white/70 hover:bg-white/10")}>
             {t('CRM', 'CRM')}
           </button>
-          <button onClick={() => setActiveTab('marketing')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'marketing' ? "bg-indigo-400 text-white" : "text-white/70 hover:bg-white/10")}>
+          <Link to="/ai-marketing" className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'marketing' ? "bg-indigo-400 text-white" : "text-white/70 hover:bg-white/10")}>
             {t('AI MARKETING', 'AI MARKETING')}
-          </button>
+          </Link>
           <button onClick={() => setActiveTab('insights')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'insights' ? "bg-emerald-400 text-navy" : "text-white/70 hover:bg-white/10")}>
             {t('AI INSIGHTS', 'AI INSIGHTS')}
           </button>

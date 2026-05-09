@@ -4,7 +4,7 @@ import TargetingListCard from '../components/marketing/TargetingListCard';
 import CopywritingCard from '../components/marketing/CopywritingCard';
 import AdBannerEditor from '../components/marketing/AdBannerEditor';
 
-export const AIMarketingPage = ({ setSomMessage }: { setSomMessage: (msg: string) => void }) => {
+export const AIMarketingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0a0f18] text-white p-6 lg:p-10">
       {/* Header ตามสไตล์ image_f02bb9.png */}
@@ -22,7 +22,7 @@ export const AIMarketingPage = ({ setSomMessage }: { setSomMessage: (msg: string
           <TargetingListCard />
         </div>
         <div className="space-y-8">
-          <CopywritingCard setSomMessage={setSomMessage} />
+          <CopywritingCard />
           <AdBannerEditor />
         </div>
       </div>

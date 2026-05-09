@@ -13,6 +13,7 @@ import StaffDashboard from './components/StaffDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
 import ManagerInsights from './components/ManagerInsights';
+import AIMarketingPage from './pages/AIMarketingPage';
 import PinEntry from './components/PinEntry';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
 import PartnerDirectory from './components/PartnerDirectory';
@@ -126,6 +127,11 @@ export default function App() {
                     <Route path="/manager-insights" element={
                       <ProtectedRoute level="manager">
                         <ManagerInsights />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ai-marketing" element={
+                      <ProtectedRoute level="manager">
+                        <AIMarketingPage />
                       </ProtectedRoute>
                     } />
                     <Route path="/owner-report" element={
