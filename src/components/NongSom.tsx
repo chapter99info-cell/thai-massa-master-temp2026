@@ -84,7 +84,69 @@ export default function NongSom() {
     }
   }, [messages]);
 
-  const bubbleMessage = (() => {
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+  const [speech, setSpeech] = useState<string | null>(null);
+  const [bubbleButtons, setBubbleButtons] = useState<Array<{label: string, onClick: () => void}> | null>(null);
+
+  useEffect(() => {
+    // Show Review Prompt on Home page if not shown yet
+    if (!isInternal && location.pathname === '/' && !localStorage.getItem('review_prompt_shown')) {
+      setShowReviewPrompt(true);
+      localStorage.setItem('review_prompt_shown', 'true');
+      handleAskForReview();
+    }
+  }, [location, isInternal]);
+
+  const handleAskForReview = () => {
+    // 1. เตรียมข้อความ 2 ภาษา
+    const content = {
+      en: {
+        message: "Hi there! 🇦🇺 If you enjoyed your massage today, would you mind leaving us a 5-star review on Google? Show it to our staff next time to get 10% off! ✨",
+        btnReview: "Rate us on Google 🌟",
+        btnLater: "Maybe later"
+      },
+      th: {
+        message: "พี่คะ! 🍊 ถ้านวดครั้งก่อนถูกใจ น้องส้มฝากกดดาวบน Google ให้ร้านเราหน่อยน้า... โชว์รีวิวให้พี่ๆ ดู รับส่วนลด 10% ครั้งหน้าได้เลยค่ะ! ✨",
+        btnReview: "ไปที่ Google Review 🌟",
+        btnLater: "ไว้ทีหลังนะ"
+      }
+    };
+
+    // 2. เลือกภาษาตามที่ผู้ใช้ตั้งค่าไว้ในแอป
+    const current = language === 'th' ? content.th : content.en;
+
+    // 3. สั่งให้น้องส้มแสดงผลตามภาษานั้นๆ
+    setSpeech(current.message);
+    setBubbleButtons([
+      { 
+        label: current.btnReview, 
+        onClick: () => window.open("https://g.page/r/chapter99-thaimassage-test/review", "_blank") 
+      },
+      { 
+        label: current.btnLater, 
+        onClick: () => {
+            setSpeech("");
+            setShowReviewPrompt(false);
+        }
+      }
+    ]);
+  };
+
+  const bubbleMessage: React.ReactNode = (() => {                
+    if (showReviewPrompt && speech) {
+        return (
+            <div className="flex flex-col gap-2">
+                <span className="text-white">{speech}</span>
+                <div className="flex gap-2">
+                  {bubbleButtons?.map((btn, i) => (
+                    <button key={i} onClick={btn.onClick} className="bg-gold text-navy font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-widest text-center mt-1">
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+            </div>
+        );
+    }
     if (!isInternal) {
       if (location.pathname === '/') {
         return t('สวัสดีค่ะพี่! มองหาบริการนวดผ่อนคลายอยู่หรือเปล่าคะ? จองออนไลน์ตอนนี้หรือโทรหาเราได้เลยนะคะ! 🧡', 'Welcome! Looking for a massage? Book online now or give us a call! 🧡');

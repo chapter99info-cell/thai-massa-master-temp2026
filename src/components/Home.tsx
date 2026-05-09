@@ -16,6 +16,43 @@ import { fetchWithRetry } from '../lib/apiUtils';
 import LoadingOverlay from './LoadingOverlay';
 import VoucherStore from './VoucherStore';
 
+const GOOGLE_REVIEW_URL = "https://g.page/r/chapter99-thaimassage-test/review";
+
+const ReviewSection = () => {
+  const reviews = [
+    { name: "คุณนพดล", text: "นวดดีมากครับ พนักงานสุภาพ ร้านสะอาดแนะนำเลย" },
+    { name: "Ms. Sarah", text: "Best Thai massage in town! Very professional." },
+    { name: "คุณศิริพร", text: "ประทับใจการบริการมากค่ะ จองผ่านแอปสะดวกสุดๆ" }
+  ];
+
+  return (
+    <div className="py-10 bg-[#0a1120]">
+      <h2 className="text-center text-xl font-bold text-white mb-6">เสียงตอบรับจากลูกค้าของเรา</h2>
+      <div className="flex overflow-x-auto gap-4 px-6 pb-4 no-scrollbar">
+        {reviews.map((r, i) => (
+          <div key={i} className="bg-[#1a2333] p-5 rounded-2xl border border-blue-500/10 min-w-[280px]">
+            <div className="flex text-yellow-400 mb-2">★★★★★</div>
+            <p className="text-white text-sm italic mb-3">"{r.text}"</p>
+            <p className="text-blue-400 text-xs font-bold">- {r.name}</p>
+          </div>
+        ))}
+      </div>
+      
+      {/* ปุ่ม Action สำหรับไปรีวิวบน Google */}
+      <div className="flex justify-center mt-6">
+        <a 
+          href={GOOGLE_REVIEW_URL}
+          target="_blank" 
+          rel="noreferrer"
+          className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-full text-sm font-medium transition"
+        >
+          เขียนรีวิวให้เราบน Google 🌟
+        </a>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const { t } = useLanguage();
   const settings = getAppSettings();
@@ -547,6 +584,9 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
+
+      {/* Wall of Love */}
+      <ReviewSection />
 
       {/* Find Us Section */}
       <section id="location" className="relative overflow-hidden bg-navy">

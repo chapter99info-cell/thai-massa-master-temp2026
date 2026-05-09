@@ -46,7 +46,7 @@ export default function Cart() {
   const [memberId, setMemberId] = useState('');
   
   // Payment Step State
-  const [paymentOption, setPaymentOption] = useState<'clinic' | 'online'>('clinic');
+  const [paymentOption, setPaymentOption] = useState<'payid' | 'cash' | 'card'>('payid');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -85,6 +85,9 @@ export default function Cart() {
     const serviceType = cart[0].category === 'FACIAL' ? 'Facial' : 'Massage';
     const availableBed = beds.find(b => b.status === 'Vacant' && b.type === serviceType);
 
+    // Map paymentOption to valid booking paymentMethod (clinic | online)
+    const bookingPaymentMethod = paymentOption === 'card' ? 'online' : 'clinic';
+
     const bookingData = {
       customerName: customerName,
       customerPhone: customerPhone,
@@ -99,16 +102,24 @@ export default function Cart() {
       date: selectedDate,
       healthFund: healthFund,
       memberId: memberId,
-      paymentMethod: paymentOption,
+      paymentMethod: bookingPaymentMethod,
       bedId: availableBed?.id,
       status: 'Reserved',
       timestamp: new Date().toISOString()
     };
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      if (paymentOption === 'card') {
+          // Simulate Card Payment API call
+          await new Promise((resolve, reject) => {
+              console.log("Processing Card Payment...");
+              setTimeout(() => {
+                  console.log("Card Payment processed successfully");
+                  resolve(true);
+              }, 3000);
+          });
+      }
+
       // Add to shared booking state (Manager Dashboard will see this)
       addBooking(bookingData);
       
@@ -274,7 +285,12 @@ export default function Cart() {
                 <input 
                   type="date" 
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(e) => {
+                    const today = new Date().toISOString().split('T')[0];
+                    if (e.target.value >= today) {
+                      setSelectedDate(e.target.value);
+                    }
+                  }}
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full p-4 bg-cream/50 rounded-2xl border border-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/20 text-charcoal font-bold"
                 />
@@ -432,12 +448,12 @@ export default function Cart() {
               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Payment Options</h3>
               
               <div className="space-y-3">
-                {/* Option A: Pay at Clinic */}
+                {/* Option A: PayID */}
                 <button
-                  onClick={() => setPaymentOption('clinic')}
+                  onClick={() => setPaymentOption('payid')}
                   className={cn(
                     "w-full p-5 rounded-2xl border-2 transition-all flex items-center justify-between group",
-                    paymentOption === 'clinic' 
+                    paymentOption === 'payid' 
                       ? "bg-white border-primary shadow-lg" 
                       : "bg-white/40 border-transparent hover:border-primary/20"
                   )}
@@ -445,29 +461,59 @@ export default function Cart() {
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-                      paymentOption === 'clinic' ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                      paymentOption === 'payid' ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                    )}>
+                      <Smartphone size={20} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-charcoal">PayID</p>
+                      <p className="text-[10px] text-accent/60 uppercase font-bold tracking-widest">Bank Transfer</p>
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                    paymentOption === 'payid' ? "border-primary bg-primary text-white" : "border-primary/20"
+                  )}>
+                    {paymentOption === 'payid' && <CheckCircle2 size={14} />}
+                  </div>
+                </button>
+                
+                {/* Option B: Cash */}
+                <button
+                  onClick={() => setPaymentOption('cash')}
+                  className={cn(
+                    "w-full p-5 rounded-2xl border-2 transition-all flex items-center justify-between group",
+                    paymentOption === 'cash' 
+                      ? "bg-white border-primary shadow-lg" 
+                      : "bg-white/40 border-transparent hover:border-primary/20"
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                      paymentOption === 'cash' ? "bg-primary text-white" : "bg-primary/10 text-primary"
                     )}>
                       <Store size={20} />
                     </div>
                     <div className="text-left">
-                      <p className="font-bold text-charcoal">Pay at Clinic</p>
-                      <p className="text-[10px] text-accent/60 uppercase font-bold tracking-widest">HICAPS / Cash / Card</p>
+                      <p className="font-bold text-charcoal">Cash</p>
+                      <p className="text-[10px] text-accent/60 uppercase font-bold tracking-widest">Pay in-store</p>
                     </div>
                   </div>
                   <div className={cn(
                     "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                    paymentOption === 'clinic' ? "border-primary bg-primary text-white" : "border-primary/20"
+                    paymentOption === 'cash' ? "border-primary bg-primary text-white" : "border-primary/20"
                   )}>
-                    {paymentOption === 'clinic' && <CheckCircle2 size={14} />}
+                    {paymentOption === 'cash' && <CheckCircle2 size={14} />}
                   </div>
                 </button>
 
-                {/* Option B: Secure Online Payment */}
+                {/* Option C: Card */}
                 <button
-                  onClick={() => setPaymentOption('online')}
+                  onClick={() => setPaymentOption('card')}
                   className={cn(
                     "w-full p-5 rounded-2xl border-2 transition-all flex items-center justify-between group",
-                    paymentOption === 'online' 
+                    paymentOption === 'card' 
                       ? "bg-white border-primary shadow-lg" 
                       : "bg-white/40 border-transparent hover:border-primary/20"
                   )}
@@ -475,34 +521,27 @@ export default function Cart() {
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-                      paymentOption === 'online' ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                      paymentOption === 'card' ? "bg-primary text-white" : "bg-primary/10 text-primary"
                     )}>
                       <CreditCard size={20} />
                     </div>
                     <div className="text-left">
-                      <p className="font-bold text-charcoal">Secure Online Payment</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Apple size={12} className="text-accent" />
-                        <Smartphone size={12} className="text-accent" />
-                        <div className="flex gap-0.5">
-                          <div className="w-4 h-2.5 bg-accent/20 rounded-sm" />
-                          <div className="w-4 h-2.5 bg-accent/20 rounded-sm" />
-                        </div>
-                      </div>
+                      <p className="font-bold text-charcoal">Card (Online)</p>
+                      <p className="text-[10px] text-accent/60 uppercase font-bold tracking-widest">Secure Payment</p>
                     </div>
                   </div>
                   <div className={cn(
                     "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                    paymentOption === 'online' ? "border-primary bg-primary text-white" : "border-primary/20"
+                    paymentOption === 'card' ? "border-primary bg-primary text-white" : "border-primary/20"
                   )}>
-                    {paymentOption === 'online' && <CheckCircle2 size={14} />}
+                    {paymentOption === 'card' && <CheckCircle2 size={14} />}
                   </div>
                 </button>
               </div>
 
               {/* Interactive Message */}
               <AnimatePresence mode="wait">
-                {paymentOption === 'clinic' && (
+                {(paymentOption === 'payid' || paymentOption === 'cash') && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -511,7 +550,7 @@ export default function Cart() {
                   >
                     <Info className="text-primary shrink-0 mt-0.5" size={16} />
                     <p className="text-xs text-primary/80 leading-relaxed italic">
-                      Your spot is reserved. Please arrive 10 mins early for your HICAPS processing.
+                      Your booking is reserved! Please provide your contact details above, and final confirmation will be completed upon manager verification at the clinic.
                     </p>
                   </motion.div>
                 )}

@@ -1,4 +1,5 @@
 import { AppSettings, Bed } from './types';
+import { CLIENT_CONFIG } from './config/clientConfig';
 
 export interface StoreConfig {
   storeName: string;
@@ -13,13 +14,13 @@ export interface StoreConfig {
 }
 
 export const storeConfig: StoreConfig = {
-  storeName: 'Premium Thai Wellness',
-  primaryColor: '#B8962E', // Professional Gold
+  storeName: CLIENT_CONFIG.shopName,
+  primaryColor: CLIENT_CONFIG.themeColor, // Professional Gold
   accentColor: '#E2C374', // Soft Gold
-  backgroundColor: '#0F172A', // Deep Navy
-  abn: '12 345 678 910', // Updated from SOP/Prompt
-  address: 'Level 1/76 Pier Street, Altona 3018',
-  phone: '0466 992 456',
+  backgroundColor: CLIENT_CONFIG.backgroundColor, // Deep Navy
+  abn: CLIENT_CONFIG.abn,
+  address: CLIENT_CONFIG.address,
+  phone: CLIENT_CONFIG.phone,
   packageTier: 3, // Full access for development
   gstRate: 0.10, // 10% GST default
 };
@@ -34,9 +35,9 @@ export const INITIAL_BEDS: Bed[] = [
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
-  clientName: 'Premium Thai Wellness',
+  clientName: CLIENT_CONFIG.shopName,
   storeId: 'PREMIUM-SYD-001',
-  googleSheetId: '1_JJv-Z3NKqr84utwKZDFayBkJQ6RkVElicEV7zSLFMs',
+  googleSheetId: CLIENT_CONFIG.googleSheetId,
   gpFeePercent: 0.5,
   showPosMode: true,
   showDailySummary: true,
@@ -58,7 +59,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   heroImageUrl: '',
   shopDescription: 'Premium Thai Wellness - Your Ultimate Escape for Body and Soul',
   isUpgraded: false,
-  toneOfVoice: 'Warm, International, Professional, and Relaxing',
+  toneOfVoice: CLIENT_CONFIG.aiPersona,
 };
 
 export const getAppSettings = (): AppSettings => {

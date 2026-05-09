@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './components/Home';
 import NongSom from './components/NongSom';
@@ -12,7 +12,7 @@ import Cart from './components/Cart';
 import StaffDashboard from './components/StaffDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
-import ManagerInsights from './components/ManagerInsights';
+import AIInsights from './pages/AIInsights';
 import AIMarketingPage from './pages/AIMarketingPage';
 import PinEntry from './components/PinEntry';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
@@ -126,7 +126,7 @@ export default function App() {
                     } />
                     <Route path="/manager-insights" element={
                       <ProtectedRoute level="manager">
-                        <ManagerInsights />
+                        <AIInsights />
                       </ProtectedRoute>
                     } />
                     <Route path="/ai-marketing" element={
@@ -146,7 +146,7 @@ export default function App() {
                     } />
                   </Routes>
                   <SessionWarning />
-                  <NongSom />
+                  <NongSomWrapper />
                 </Router>
               </CartProvider>
             </PinProvider>
@@ -155,4 +155,21 @@ export default function App() {
       </LanguageProvider>
     </ErrorBoundary>
   );
+}
+
+function NongSomWrapper() {
+  const location = useLocation();
+  const hiddenPaths = [
+    '/staff-dashboard',
+    '/manager-dashboard',
+    '/manager-insights',
+    '/ai-marketing',
+    '/owner-report',
+    '/super-admin'
+  ];
+  
+  if (hiddenPaths.includes(location.pathname)) {
+    return null;
+  }
+  return <NongSom />;
 }
