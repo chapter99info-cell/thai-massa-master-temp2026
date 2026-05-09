@@ -36,6 +36,7 @@ import {
   Download,
   Lock as LockIcon,
   Sparkles,
+  Send,
   Image as ImageIcon
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -52,6 +53,7 @@ import { googleSheetService } from '../services/googleSheetService';
 
 import AdBanner from './AdBanner';
 import PrintableReceipt from './PrintableReceipt';
+import { AIMarketingPage } from '../pages/AIMarketingPage';
 
 interface ManagerDashboardProps {
   enablePrinting?: boolean;
@@ -104,7 +106,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   const [payIdSlip, setPayIdSlip] = useState<string | null>(null);
   const [isStaffStatusOpen, setIsStaffStatusOpen] = useState(false);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'control' | 'payments' | 'calendar' | 'crm' | 'audit' | 'expenses' | 'marketing'>('control');
+  const [activeTab, setActiveTab] = useState<'control' | 'payments' | 'calendar' | 'crm' | 'audit' | 'expenses' | 'marketing' | 'insights'>('control');
   const [customers, setCustomers] = useState<any[]>([
     { id: 'c1', name: 'John Doe', visits: 12, lastVisit: '2026-03-01', birthday: '1990-05-05' },
     { id: 'c2', name: 'Jane Smith', visits: 1, lastVisit: '2026-05-01', birthday: '1995-10-10' },
@@ -113,47 +115,14 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   ]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [newExpense, setNewExpense] = useState({ description: '', amount: 0, category: 'Supplies' });
   const [isAiScanning, setIsAiScanning] = useState(false);
-  const [isAiProcessingMarketing, setIsAiProcessingMarketing] = useState(false);
-  const [marketingInput, setMarketingInput] = useState('');
-  const [marketingOutput, setMarketingOutput] = useState('');
-  const generateMarketingPost = async () => {
-    setIsAiProcessingMarketing(true);
-    setMarketingOutput('');
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      // Updated prompt to ask for tips and structure the response
-      const prompt = `ในฐานะ "น้องส้ม" เลขาส่วนตัวอัจฉริยะ ช่วยเปลี่ยนไอเดียภาษาไทยนี้: "${marketingInput}" ให้เป็น Content ภาษาอังกฤษระดับพรีเมียม (Luxury) สำหรับโพสต์ลง Social Media ของร้าน ${storeConfig.storeName} ที่ Sydney โดยใช้โทนเสียงแบบ ${settings.toneOfVoice || 'Warm and Professional'}.
+  const [newExpense, setNewExpense] = useState({ description: '', amount: 0 });
+  // const [newExpense, setNewExpense] = useState({ description: '', amount: 0 });��เก่งเรื่องการเขียน Content ภาษาอังกฤษที่ดูแพง หรูหรา ใส่ใจรายละเอียด และสร้างภาพลักษณ์อันโดดเด่นให้ร้านอาหารหรือร้านนวดใน Sydney",
 
-      โครงสร้างที่ต้องการ:
-      1. Premium English Caption (Luxury & Professional)
-      2. Recommended Visual Tips: (คำแนะนำสั้นๆ ว่าต้องใช้รูปภาพหรือวิดีโอแบบไหน เพื่อให้ดูหรูหราที่สุด)
 
-      ใส่ Hashtag ที่เกี่ยวข้องและปิดท้ายด้วย 🍊🧡 ทุกครั้ง`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          systemInstruction: "คุณคือ 'น้องส้ม' (Nong Som) ผู้เชี่ยวชาญด้านการตลาด Wellness และ Restaurant ระดับพรีเมียม คุณเรียกตัวเองว่า 'น้องส้ม' และเรียกผู้ใช้งานว่า 'พี่' เสมอ คุณเก่งเรื่องการเขียน Content ภาษาอังกฤษที่ดูแพง หรูหรา ใส่ใจรายละเอียด และสร้างภาพลักษณ์อันโดดเด่นให้ร้านอาหารหรือร้านนวดใน Sydney",
-        }
-      });
 
-      const text = response.text;
-      if (text) {
-        setMarketingOutput(text);
-        setSomMessage(t('ปั่น Content หรูๆ พร้อม Tips ถ่ายรูปให้แล้วค่ะพี่! กด Copy ไปโพสต์ได้เลย (Chop the Money!) 🍊', 'Premium content with visual tips generated! Copy and post it now! 🍊'));
-      } else {
-        setMarketingOutput("ขอโทษทีค่ะพี่ น้องส้มขัดข้องนิดหน่อย ลองใหม่อีกทีนะคะ 🍊");
-      }
-    } catch (error) {
-      console.error("AI Marketing Error:", error);
-      setMarketingOutput("พี่คะ น้องส้มเหนื่อยนิสนึง ขอพักแป๊บนะคะ หรือพี่ลืมใส่ API Key หรือเปล่าคะ? 🍊");
-    } finally {
-      setIsAiProcessingMarketing(false);
-    }
-  };
+
+
   const [monthlySummary, setMonthlySummary] = useState<{
     count: number;
     totalRevenue: number;
@@ -261,6 +230,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
   };
 
   const newAlertsCount = alerts.filter(a => a.status === 'NEW').length;
+  const shouldShowNongSom = accessLevel === 'owner' || activeTab === 'marketing' || activeTab === 'insights';
 
   const getInsuranceStatus = (expiryDate?: string) => {
     if (!expiryDate) return { status: 'valid', message: '' };
@@ -713,6 +683,9 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
           <button onClick={() => setActiveTab('marketing')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'marketing' ? "bg-indigo-400 text-white" : "text-white/70 hover:bg-white/10")}>
             {t('AI MARKETING', 'AI MARKETING')}
           </button>
+          <button onClick={() => setActiveTab('insights')} className={cn("px-6 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all", activeTab === 'insights' ? "bg-emerald-400 text-navy" : "text-white/70 hover:bg-white/10")}>
+            {t('AI INSIGHTS', 'AI INSIGHTS')}
+          </button>
         </div>
         
         <div className="flex items-center gap-4">
@@ -747,7 +720,7 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
       </header>
 
       <AnimatePresence>
-        {somMessage && (
+        {shouldShowNongSom && somMessage && (
           <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
@@ -974,132 +947,13 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                     <p className="text-slate-500 text-xs text-left">{t('ประวัติการพยายามเข้าถึงฟังก์ชันที่ถูกจำกัด', 'Unauthorized access attempts history')}</p>
                   </div>
                 </div>
-                
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                  {securityLogs.length > 0 ? securityLogs.map(log => (
-                    <div key={log.id} className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="px-2 py-1 bg-red-500 text-white text-[8px] font-black rounded uppercase tracking-widest">{log.eventType}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
-                      </div>
-                      <p className="text-xs text-slate-300 text-left font-bold">{log.details}</p>
-                      <p className="text-[10px] text-red-400/60 uppercase font-black tracking-widest">Role: {log.role}</p>
-                    </div>
-                  )) : (
-                    <div className="text-center py-10">
-                      <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto text-slate-600 mb-4">
-                        <CheckCircle size={32} />
-                      </div>
-                      <p className="text-slate-600 italic text-sm">No security incidents detected.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Audit Logs */}
-              <div className="bg-slate-900/80 p-8 rounded-[3rem] border border-indigo-500/10 shadow-2xl backdrop-blur-md space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-                    <FileText size={28} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-serif font-bold text-white text-left">{t('Audit Log / ประวัติการทำงาน', 'Activity Audit Log')}</h3>
-                    <p className="text-slate-500 text-xs text-left">{t('ตรวจสอบว่าใครเป็นคนลงคิวและปิดยอด', 'Track who created and closed transactions')}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                  {auditLogs.length > 0 ? auditLogs.map(log => (
-                    <div key={log.id} className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50 space-y-2 border-l-4 border-l-indigo-500">
-                      <div className="flex justify-between items-center">
-                        <span className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">{log.action}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
-                      </div>
-                      <p className="text-xs text-slate-300 text-left">{log.details}</p>
-                      <div className="pt-2 border-t border-slate-700/50 flex justify-between items-center">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Performer: {log.performer}</span>
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-10">
-                      <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto text-slate-600 mb-4">
-                        <Clock size={32} />
-                      </div>
-                      <p className="text-slate-600 italic text-sm">No activity recorded yet.</p>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'marketing' && (accessLevel === 'owner' || accessLevel === 'admin') && (
-          <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8">
-            <div className="bg-slate-900/80 p-10 rounded-[3rem] border border-indigo-500/10 shadow-2xl backdrop-blur-md space-y-10">
-               <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-                    <Sparkles size={32} />
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-serif font-bold text-white">{t('AI Marketing Hub 🍊', 'AI Marketing Hub')}</h3>
-                    <p className="text-slate-500 text-sm">{t('เปลี่ยนภาษาไทยบ้านๆ ให้เป็น Content ภาษาอังกฤษระดับพรีเมียม', 'Convert casual Thai into premium English content.')}</p>
-                  </div>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60">{t('Thai Concept / ไอเดียบอกน้องส้ม', 'Thai Concept')}</label>
-                    <textarea 
-                      value={marketingInput}
-                      onChange={(e) => setMarketingInput(e.target.value)}
-                      placeholder={t('เช่น นวดไทยที่นี่ดีที่สุดใน Altona ราคากันเอง พนักงานฝีมือดี...', 'e.g. Best Thai massage in Altona, friendly prices...')}
-                      className="w-full h-48 bg-slate-800/50 border border-indigo-500/10 rounded-3xl p-6 text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-all font-sans"
-                    />
-                    <button 
-                      disabled={!marketingInput || isAiProcessingMarketing}
-                      onClick={generateMarketingPost}
-                      className={cn(
-                        "w-full py-4 bg-indigo-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
-                        (!marketingInput || isAiProcessingMarketing) ? "opacity-50 grayscale cursor-not-allowed" : "hover:scale-105 active:scale-95 shadow-xl shadow-indigo-900/20"
-                      )}
-                    >
-                      {isAiProcessingMarketing ? <Timer className="animate-spin" /> : <Sparkles />}
-                      {isAiProcessingMarketing ? t('กำลังเขียน...', 'Generating...') : t('Generate Premium Eng Content', 'Generate Premium Eng Content')}
-                    </button>
-                  </div>
-
-                    <div className="space-y-4">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/60">{t('Luxury Result / ผลลัพธ์ระดับพรีเมียม', 'Luxury Result')}</label>
-                      <div className="w-full h-48 relative group">
-                        {marketingOutput ? (
-                          <>
-                            {/* Glowing Gold Border Container */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#B8962E] to-[#F5F5DC] rounded-3xl blur-[1px]" />
-                            <div className="relative m-[1px] h-[calc(100%-2px)] bg-[#0A0D17] border border-indigo-500/20 rounded-[1.4rem] p-6 text-indigo-100 text-sm leading-relaxed overflow-y-auto italic font-serif shadow-[0_0_20px_rgba(184,150,46,0.2)] whitespace-pre-wrap">
-                              {marketingOutput}
-                              <button 
-                                onClick={() => {
-                                  navigator.clipboard.writeText(marketingOutput);
-                                  setSomMessage(t('คัดลอกเรียบร้อยค่ะ! 🍊', 'Copied to clipboard! 🍊'));
-                                }}
-                                className="absolute top-4 right-4 p-2 bg-gold/20 hover:bg-gold text-white hover:text-navy rounded-lg transition-all shadow-[0_0_10px_rgba(184,150,46,0.3)]"
-                              >
-                                <Plus size={16} />
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 flex flex-col items-center justify-center text-slate-600 opacity-50">
-                             <ImageIcon size={32} className="mb-2" />
-                             <p className="text-[10px] font-black uppercase tracking-widest">Waiting for input...</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-               </div>
-            </div>
-          </div>
+          <AIMarketingPage setSomMessage={setSomMessage} />
         )}
 
         {activeTab === 'expenses' && (accessLevel === 'owner' || accessLevel === 'admin') && (
@@ -2028,13 +1882,14 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                   </div>
                 </div>
 
-                {/* Nong Som Guidance */}
-                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-orange-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">🍊</div>
-                  <p className="text-xs text-orange-600 leading-relaxed font-bold">
-                    {t('พี่จิ้มเลือกวิธีจ่ายเงินที่ลูกค้าใช้ได้เลยนะคะ ถ้าเป็น PayID น้องส้มจามเวลาเข้าให้พี่เจ้าของร้านเป๊ะๆ เลยค่ะ พี่ไม่ต้องห่วงนะคะ! 🍊', 'Please select the payment method. For PayID, I will record the exact time for the owner! 🍊')}
-                  </p>
-                </div>
+                {shouldShowNongSom && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-orange-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">🍊</div>
+                    <p className="text-xs text-orange-600 leading-relaxed font-bold">
+                      {t('พี่จิ้มเลือกวิธีจ่ายเงินที่ลูกค้าใช้ได้เลยนะคะ ถ้าเป็น PayID น้องส้มจามเวลาเข้าให้พี่เจ้าของร้านเป๊ะๆ เลยค่ะ พี่ไม่ต้องห่วงนะคะ! 🍊', 'Please select the payment method. For PayID, I will record the exact time for the owner! 🍊')}
+                    </p>
+                  </div>
+                )}
 
                 <div className="bg-slate-800/50 rounded-[3.5rem] p-12 border-2 border-slate-700/50 space-y-8 shadow-inner">
                   <div className="flex justify-between items-center pb-8 border-b-2 border-slate-700/50">
@@ -2389,12 +2244,14 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
                 )}
 
                 {/* Nong Som Help */}
-                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3 text-left">
-                  <div className="w-8 h-8 rounded-full bg-orange-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">🍊</div>
-                  <p className="text-xs text-orange-600 font-bold leading-relaxed">
-                    {t('พี่ๆ คะ กดปุ่มพิมพ์ใบเสร็จตรงนี้ได้เลยนะคะ น้องส้มจัดหน้ากระดาษไว้ให้พี่แล้วค่ะ ฝรั่งเอาไปเคลมประกันได้ง่ายๆ เลยนะคะ! 🍊', 'You can print the receipt here. I\'ve formatted it perfectly for thermal printers so customers can claim insurance easily! 🍊')}
-                  </p>
-                </div>
+                {shouldShowNongSom && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3 text-left">
+                    <div className="w-8 h-8 rounded-full bg-orange-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">🍊</div>
+                    <p className="text-xs text-orange-600 font-bold leading-relaxed">
+                      {t('พี่ๆ คะ กดปุ่มพิมพ์ใบเสร็จตรงนี้ได้เลยนะคะ น้องส้มจัดหน้ากระดาษไว้ให้พี่แล้วค่ะ ฝรั่งเอาไปเคลมประกันได้ง่ายๆ เลยนะคะ! 🍊', 'You can print the receipt here. I\'ve formatted it perfectly for thermal printers so customers can claim insurance easily! 🍊')}
+                    </p>
+                  </div>
+                )}
 
                 {/* Thermal Receipt Preview */}
                 <div className="bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-300 text-left font-mono text-[10px] space-y-2">

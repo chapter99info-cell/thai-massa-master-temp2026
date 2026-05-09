@@ -50,6 +50,8 @@ export interface StaffStatus {
   status: 'Available' | 'Working' | 'Break' | 'PaymentPending';
   remainingSeconds?: number;
   currentCustomer?: string;
+  currentPhone?: string;
+  currentEmail?: string;
   currentService?: string;
   currentServiceId?: string;
   currentPrice?: number;

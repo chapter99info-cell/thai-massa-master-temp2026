@@ -91,32 +91,64 @@ export default function ManagerInsights() {
 
   const [upsellPitch, setUpsellPitch] = useState<string | null>(null);
   const [isGeneratingUpsell, setIsGeneratingUpsell] = useState(false);
+  
+  // NEW STATEs
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
 
   const generateUpsellPitch = async () => {
     setIsGeneratingUpsell(true);
-    setUpsellPitch(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `ในฐานะ "น้องส้ม" เลขาส่วนตัวอัจฉริยะ ช่วยเขียนประโยคเสนอขายแบบพรีเมียมและเป็นกันเอง (ภาษาไทย) เพื่อแนะนำบริการ Deep Tissue (60 min) ให้กับ "คุณวิภาดา" โดยอ้างอิงจากข้อมูลที่ว่าเธอชอบนวดไทยแบบหนักๆ และเน้นเส้นบ่าเป็นพิเศษ ประโยคควรจะทำให้เธอรู้สึกว่าเป็นลูกค้า VIP คนพิเศษที่ได้รับการใส่ใจจริงๆ 🍊🧡`,
-        config: {
-          systemInstruction: "คุณคือ 'น้องส้ม' (Nong Som) เลขาส่วนตัวระดับโปรที่ร่าเริง แจ่มใส และมีพลังงานบวกสูง คุณเรียกตัวเองว่า 'น้องส้ม' และเรียกผู้ใช้งานว่า 'พี่' เสมอ ปิดท้ายด้วย 🍊 หรือ 🧡 ทุกครั้ง คุณเก่งเรื่องการขายของแบบ Soft Sell ที่ดูพรีเมียมและใส่ใจลูกค้า และคุณมักจะใส่ความปรารถนาดีลงไปในทุกประโยค",
-        }
-      });
-
-      const text = response.text;
-      if (text) {
-        setUpsellPitch(text);
-      } else {
-        setUpsellPitch("ขอโทษทีค่ะพี่ น้องส้มขัดข้องนิดหน่อย ลองใหม่อีกทีนะคะ 🍊");
-      }
+      // Mock AI generation for now, later integrate with Gemini
+      const pitch = t(
+        'ขอเรียนเชิญพี่เพิ่มนวดเท้า 30 นาที เพื่อความผ่อนคลายเต็มรูปแบบ รับรองพี่จะสบายตัวยิ่งขึ้นค่ะ!',
+        'Would you like to add 30-minute foot massage to fully relax? You will feel much better, P\'!'
+      );
+      setUpsellPitch(pitch);
     } catch (error) {
-      console.error("AI Error:", error);
-      setUpsellPitch("พี่คะ น้องส้มเหนื่อยนิสนึง ขอพักแป๊บนะคะ หรือพี่ลืมใส่ API Key หรือเปล่าคะ? 🍊");
+      console.error(error);
     } finally {
       setIsGeneratingUpsell(false);
+    }
+  };
+
+  const performAIAnalysis = async (category: string) => {
+    setIsGeneratingAnalysis(true);
+    setAnalysisResult(null);
+    let prompt = "";
+    
+    // Construct prompt based on category
+    switch(category) {
+      case 'performance':
+        prompt = "น้องส้ม ช่วยวิเคราะห์ชั่วโมงทองคำและประสิทธิภาพให้พี่หน่อย ดูหน้า Summary ย้อนหลัง 1 เดือน ช่วยสรุปว่าช่วงเวลาไหนคิวว่างสุด และคอร์สไหนยอดดรอป พร้อมไอเดีย Happy Hour ค่ะพี่ 🍊";
+        break;
+      case 'customer':
+        prompt = "น้องส้ม ช่วยวิเคราะห์ Wellness Profile สัปดาห์นี้หน่อยว่าลูกค้าเน้นจุดไหน (บ่า/ไหล่/เท้า) และช่วยสรุปจุดเด่น/จุดปรับปรุงจากรีวิวลูกค้าเพื่อบรีฟหมอนวดพรุ่งนี้ค่ะ 🧡";
+        break;
+      case 'staff':
+        prompt = "น้องส้ม ช่วยวิเคราะห์รีวิวลูกค้าหน่อยว่าพี่หมอคนไหนน้ำหนักมือดี บริการประทับใจ เพื่อพี่แสนจะให้รางวัลและเขียนคำโปรยโปรโมทในแอปนะคะ 🍊";
+        break;
+      case 'crm':
+        prompt = "น้องส้ม ช่วยเช็ครายชื่อลูกค้าใน CRM ที่ไม่ได้กลับมานวดเกิน 45 วันหน่อย ว่าเคยนวดคอร์สอะไร และช่วยร่างข้อความ 'คิดถึงนะพี่' กระตุ้นให้เขากลับมาจองนวด V4 อีกครั้งค่ะ 🧡";
+        break;
+      default:
+        prompt = "ช่วยวิเคราะห์ข้อมูลร้านนวดให้หน่อยค่ะ";
+    }
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          systemInstruction: "คุณคือ 'น้องส้ม' (Nong Som) เลขาส่วนตัวอัจฉริยะที่เชี่ยวชาญด้านการบริหารร้านนวดและสุขภาพระดับพรีเมียมใน Sydney เน้นให้คำแนะนำที่ actionable, เป็นกันเอง และหรูหรา 🍊🧡",
+        }
+      });
+      setAnalysisResult(response.text || "น้องส้มวิเคราะห์ให้ไม่ได้ค่ะพี่ ลองใหม่อีกทีนะคะ 🍊");
+    } catch(e) {
+      setAnalysisResult("น้องส้มขออภัยค่ะ มี error เล็กน้อย พี่ลองเช็คการเชื่อมต่ออีกทีนะคะ 🍊");
+    } finally {
+      setIsGeneratingAnalysis(false);
     }
   };
 
@@ -293,6 +325,18 @@ export default function ManagerInsights() {
       </header>
 
       <main className="flex-1 overflow-y-auto p-6 lg:p-10 scrollbar-hide">
+        {/* NEW AI INSIGHTS HUB */}
+        <section className="bg-navyLight rounded-[3rem] p-8 border border-slate-800 mb-10 shadow-2xl">
+          <h2 className="text-2xl font-serif font-black text-white italic mb-6">🍊 AI Insights Hub</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button onClick={() => performAIAnalysis('performance')} className="p-4 bg-slate-800 rounded-2xl text-xs font-bold text-slate-300 hover:bg-gold hover:text-navy transition-all">วิเคราะห์ประสิทธิภาพ</button>
+            <button onClick={() => performAIAnalysis('customer')} className="p-4 bg-slate-800 rounded-2xl text-xs font-bold text-slate-300 hover:bg-gold hover:text-navy transition-all">วิเคราะห์ความพึงพอใจ</button>
+            <button onClick={() => performAIAnalysis('staff')} className="p-4 bg-slate-800 rounded-2xl text-xs font-bold text-slate-300 hover:bg-gold hover:text-navy transition-all">วิเคราะห์พนักงาน</button>
+            <button onClick={() => performAIAnalysis('crm')} className="p-4 bg-slate-800 rounded-2xl text-xs font-bold text-slate-300 hover:bg-gold hover:text-navy transition-all">วิเคราะห์ CRM/Churn</button>
+          </div>
+          {isGeneratingAnalysis && <div className="mt-4 text-gold animate-pulse text-sm">น้องส้มกำลังคิดวิเคราะห์อยู่ค่ะ รอแป๊บนะคะพี่... 🍊</div>}
+          {analysisResult && <div className="mt-6 p-6 bg-[#0A0E17] rounded-2xl text-sm italic font-serif leading-relaxed text-slate-200 border border-slate-700 whitespace-pre-wrap">{analysisResult}</div>}
+        </section>
 
       {/* Logout Confirmation Modal */}
       <AnimatePresence>

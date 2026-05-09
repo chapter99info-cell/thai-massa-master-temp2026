@@ -59,6 +59,8 @@ function ProtectedRoute({ children, level }: { children: React.ReactNode, level:
 }
 
 export default function App() {
+  const [showInstall, setShowInstall] = React.useState(false);
+
   React.useEffect(() => {
     const fetchBranding = async () => {
       const settings = getAppSettings();
@@ -69,12 +71,17 @@ export default function App() {
             ...settings,
             ...branding
           });
-          // Trigger a re-render if needed, though localStorage update might be enough for next mount
-          // For immediate update, we could use a state or context
         }
       }
     };
     fetchBranding();
+
+    const isIpad = /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isIpad && !isStandalone) {
+      setShowInstall(true);
+    }
   }, []);
 
   return (
@@ -85,6 +92,15 @@ export default function App() {
             <PinProvider>
               <CartProvider>
                 <Router>
+                  {showInstall && (
+                    <div id="install-instruction" className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+                      <div className="bg-white p-6 rounded-3xl max-w-sm text-center shadow-2xl">
+                         <h3 className="font-bold text-lg mb-2">Install for a better experience!</h3>
+                         <p className="text-slate-600 mb-4">Tap the 'Share' button and select 'Add to Home Screen' to install this app.</p>
+                         <button onClick={() => setShowInstall(false)} className="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold">Got it</button>
+                      </div>
+                    </div>
+                  )}
                   <Routes>
                     {/* Public Routes with Layout */}
                     <Route path="/" element={<Layout><Home /></Layout>} />
