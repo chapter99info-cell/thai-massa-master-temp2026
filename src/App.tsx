@@ -14,6 +14,7 @@ import OwnerDashboard from './components/OwnerDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
 import AIInsights from './pages/AIInsights';
 import AIMarketingPage from './pages/AIMarketingPage';
+import MasterConfig3501 from './pages/MasterConfig3501'; 
 import PinEntry from './components/PinEntry';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
 import PartnerDirectory from './components/PartnerDirectory';
@@ -134,6 +135,11 @@ export default function App() {
                         <AIMarketingPage />
                       </ProtectedRoute>
                     } />
+                    <Route path="/admin/3501" element={
+                      <ProtectedRoute level="admin">
+                        <MasterConfig3501 />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/owner-report" element={
                       <ProtectedRoute level="owner">
                         <OwnerDashboard />
@@ -165,7 +171,8 @@ function NongSomWrapper() {
     '/manager-insights',
     '/ai-marketing',
     '/owner-report',
-    '/super-admin'
+    '/super-admin',
+    '/admin/3501'
   ];
   
   if (hiddenPaths.includes(location.pathname)) {
