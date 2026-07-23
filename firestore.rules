@@ -16,16 +16,24 @@ service cloud.firestore {
     //   - role: string (required, 'client' or 'admin')
     //   - createdAt: string (required)
     //
-    // Collection: bookings
+    // Collection: bookings  (shared between the customer checkout flow and
+    // the staff POS/queue screens - see src/types.ts `Booking`)
     // Document ID: {bookingId}
     // Fields:
-    //   - userId: string (required)
-    //   - services: list (required)
-    //   - totalAmount: number (required)
-    //   - date: string (required)
-    //   - time: string (required)
-    //   - status: string (required, 'pending', 'confirmed', 'cancelled')
-    //   - createdAt: string (required)
+    //   - customerName, serviceName, therapistName, therapistId: string (required)
+    //   - price, durationMins: number (required)
+    //   - timeSlot, date: string (required)
+    //   - paymentMethod: 'clinic' | 'online' (required)
+    //   - status: 'Reserved' | 'In Use' | 'Completed' | 'Cancelled' (required)
+    //   - timestamp: string (required)
+    //   - bedId, healthFund, memberId, createdBy, closedBy, customerPhone,
+    //     customerEmail, serviceEnglishName: (optional)
+    //
+    // Collection: beds  (bed/room floor status - see src/types.ts `Bed`)
+    // Document ID: {bedId}
+    // Fields:
+    //   - number: string, type: 'Foot'|'Body'|'VIP', status: 'Vacant'|'In Use' (required)
+    //   - paymentStatus: 'Unpaid'|'Paid' (optional)
     //
     // ===============================================================
 
@@ -65,17 +73,34 @@ service cloud.firestore {
              isValidEmail(data.email) &&
              data.role in ['client', 'admin'] &&
              isValidDateString(data.createdAt) &&
-             data.keys().hasOnly(['uid', 'email', 'role', 'createdAt', 'displayName', 'photoURL']);
+             data.keys().hasOnly([
+               'uid', 'email', 'role', 'createdAt', 'displayName', 'photoURL',
+               // Loyalty program fields (Chapter99 membership/points system)
+               'name', 'phone', 'memberTier', 'totalVisits', 'totalSpent',
+               'points', 'lastVisitDate', 'authProvider'
+             ]);
     }
 
-    function isValidBooking(data) {
-      return data.keys().hasAll(['userId', 'services', 'totalAmount', 'date', 'time', 'status', 'createdAt']) &&
-             data.userId == request.auth.uid &&
-             data.services is list &&
-             data.totalAmount is number &&
-             data.status in ['pending', 'confirmed', 'cancelled'] &&
-             isValidDateString(data.createdAt) &&
-             data.keys().hasOnly(['userId', 'services', 'totalAmount', 'date', 'time', 'status', 'createdAt']);
+    function isValidPosBooking(data) {
+      return data.keys().hasAll([
+               'customerName', 'serviceName', 'therapistName', 'therapistId',
+               'price', 'durationMins', 'timeSlot', 'date', 'status',
+               'timestamp', 'paymentMethod'
+             ]) &&
+             data.customerName is string &&
+             data.serviceName is string &&
+             data.therapistName is string &&
+             data.price is number &&
+             data.durationMins is number &&
+             data.status in ['Reserved', 'In Use', 'Completed', 'Cancelled'] &&
+             data.paymentMethod in ['clinic', 'online'];
+    }
+
+    function isValidBed(data) {
+      return data.keys().hasAll(['number', 'type', 'status']) &&
+             data.number is string &&
+             data.type in ['Foot', 'Body', 'VIP'] &&
+             data.status in ['Vacant', 'In Use'];
     }
 
     // ===============================================================
@@ -88,10 +113,50 @@ service cloud.firestore {
       allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
     }
 
+    // NOTE ON TRUST MODEL: bookings/beds are read+written by two kinds of
+    // client that have no Firebase Auth identity at all today -
+    // (1) a customer checking out on the public site (may or may not be
+    // signed in to their loyalty account), and (2) staff terminals gated
+    // only by the local PIN screen (PinContext), not Firebase Auth. Because
+    // of that, these rules can only validate *shape*, not *who* is writing -
+    // they are effectively public, same trust level as the rest of this
+    // app's current architecture. Hardening this properly (Firebase App
+    // Check to block non-app clients, and/or giving staff real accounts)
+    // is a follow-up, not something these rules can fix alone.
     match /bookings/{bookingId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && isValidBooking(request.resource.data) && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidBooking(request.resource.data);
+      allow read: if true;
+      allow create: if isValidPosBooking(request.resource.data);
+      allow update: if isValidPosBooking(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /beds/{bedId} {
+      allow read: if true;
+      allow create: if isValidBed(request.resource.data);
+      allow update: if isValidBed(request.resource.data);
+      // Staff add/remove beds from OwnerDashboard with no Firebase Auth at
+      // all (see trust-model note above) - gating delete behind isAdmin()
+      // would just make the "-" button silently fail for every real shop.
+      allow delete: if true;
+    }
+
+    // ===============================================================
+    // Loyalty points redemptions
+    // ===============================================================
+    // Collection: pointsRedemptions
+    // A customer redeems 100 points for a $10 code they show staff at the
+    // counter. NOTE: the staff PIN system (StaffDashboard/ManagerDashboard)
+    // is a *local* session, not a Firebase Auth session - so there is no
+    // secure way yet for a staff member to mark `isUsed: true` from the
+    // client. Until staff have their own Firebase-authenticated accounts (or
+    // a Cloud Function does this server-side with elevated privileges), only
+    // an admin account can mark a code as used.
+    match /pointsRedemptions/{redemptionId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.isUsed == false;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
   }

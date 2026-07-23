@@ -18,25 +18,30 @@ export default function PinEntry() {
   const settings = getAppSettings();
 
   const handleLogin = (pinToTry: string) => {
-    const success = login(pinToTry);
-    if (success) {
-      // ✅ รหัสถูกต้อง: พาวิ่งไปหน้า Dashboard ตามสิทธิ์
-      if (pinToTry === '3501') navigate('/super-admin');
-      else if (pinToTry === '9999') navigate('/owner-report');
-      else if (pinToTry === '4444') {
-        if (settings.showPosMode) {
-          navigate('/manager-dashboard');
-        } else {
-          setIsError(true);
-          setPin('');
-        }
-      }
-      else if (pinToTry === '1111') navigate('/staff-dashboard');
-    } else {
+    const level = login(pinToTry);
+
+    if (!level) {
       // ❌ รหัสผิด: แสดง Error
       setIsError(true);
       setPin('');
+      return;
     }
+
+    // ✅ รหัสถูกต้อง: พาวิ่งไปหน้า Dashboard ตามสิทธิ์ที่ได้จริง (ไม่ผูกกับรหัสตายตัว
+    // เพื่อให้ยังใช้งานได้แม้เจ้าของ/แอดมินจะเปลี่ยนรหัส PIN ในภายหลัง)
+    if (level === 'manager' && !settings.showPosMode) {
+      setIsError(true);
+      setPin('');
+      return;
+    }
+
+    const routesByLevel: Record<NonNullable<typeof level>, string> = {
+      admin: '/super-admin',
+      owner: '/owner-report',
+      manager: '/manager-dashboard',
+      staff: '/staff-dashboard',
+    };
+    navigate(routesByLevel[level]);
   };
 
   const handleNumberClick = (num: string) => {

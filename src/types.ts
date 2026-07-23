@@ -115,6 +115,8 @@ export interface AlertEntry {
 export interface Booking {
   id: string;
   customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
   serviceName: string;
   serviceEnglishName?: string;
   therapistName: string;
@@ -203,6 +205,20 @@ export interface Customer {
   totalSpent: number;
   lastVisitDate: string; // ISO string
   notes?: string;
+  /** Present once the customer creates a self-service account (Google/email sign-in). */
+  uid?: string;
+  points?: number;
+  authProvider?: 'google' | 'email';
+  createdAt?: string; // ISO string, set on first sign-in
+}
+
+export interface PointsLedgerEntry {
+  id: string;
+  uid: string;
+  type: 'earn' | 'redeem';
+  points: number; // positive for earn, positive magnitude for redeem too (subtracted separately)
+  reason: string; // e.g. "Booking #123" or "Redeemed for $10 voucher R-AB12CD"
+  timestamp: string; // ISO string
 }
 
 export interface GiftVoucher {

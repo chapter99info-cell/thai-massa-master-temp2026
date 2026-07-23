@@ -18,6 +18,7 @@ import MasterConfig3501 from './pages/MasterConfig3501';
 import PinEntry from './components/PinEntry';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
 import PartnerDirectory from './components/PartnerDirectory';
+import Profile from './pages/Profile';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { PinProvider, usePin } from './contexts/PinContext';
@@ -109,7 +110,7 @@ export default function App() {
                     <Route path="/book" element={<Layout><Home /></Layout>} />
                     <Route path="/cart" element={<Layout><Cart /></Layout>} />
                     <Route path="/partners" element={<Layout><PartnerDirectory /></Layout>} />
-                    <Route path="/profile" element={<Layout><div className="p-8 text-center font-serif italic">User Profile Coming Soon</div></Layout>} />
+                    <Route path="/profile" element={<Layout><Profile /></Layout>} />
 
                     {/* Dashboard Routes (Self-contained Layouts) */}
                     <Route path="/staff-dashboard" element={

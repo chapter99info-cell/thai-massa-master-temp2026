@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Home, Calendar, ShoppingBag, User, Menu as MenuIcon, LogIn, LogOut, Lock as LockIcon, Phone, MapPin, Clock, ShieldCheck, Flower2 } from 'lucide-react';
+import { Home, Calendar, ShoppingBag, User, Menu as MenuIcon, LogIn, LogOut, Phone, MapPin, Clock, ShieldCheck, Flower2 } from 'lucide-react';
 import { storeConfig, getAppSettings } from '../config';
 import { cn } from '../lib/utils';
 import { useCart } from '../contexts/CartContext';
@@ -16,7 +16,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { totalItems } = useCart();
-  const { user, login, logout, loading } = useAuth();
+  const { user, logout, loading } = useAuth();
   const { accessLevel, isAuthenticated: isPinAuth } = usePin();
   const { language, setLanguage } = useLanguage();
   const settings = getAppSettings();
@@ -59,7 +59,7 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-8 text-[10px] font-black uppercase text-ocean/40 tracking-widest">
               {!loading && (
                 user ? (
-                  <button 
+                  <button
                     onClick={logout}
                     className="hover:text-ocean transition-colors flex items-center gap-2"
                   >
@@ -67,12 +67,12 @@ export default function Layout({ children }: LayoutProps) {
                     Logout
                   </button>
                 ) : (
-                  <Link 
-                    to="/staff-dashboard"
+                  <Link
+                    to="/profile"
                     className="login-link hover:text-ocean transition-colors border-b-2 border-transparent hover:border-gold flex items-center gap-2"
                   >
-                    <LockIcon size={14} className="text-gold" />
-                    <span>Staff Portal</span>
+                    <User size={14} className="text-gold" />
+                    <span>Sign In</span>
                   </Link>
                 )
               )}
@@ -143,6 +143,14 @@ export default function Layout({ children }: LayoutProps) {
         {/* Copyright Bar */}
         <p className="text-center mt-10 text-[10px] text-white/40 uppercase tracking-[0.4em] font-black">
           © {new Date().getFullYear()} Premium Thai Wellness. Powered by Chapter99 Solution
+        </p>
+        <p className="text-center mt-2">
+          <Link
+            to="/staff-dashboard"
+            className="text-[9px] text-white/20 hover:text-gold uppercase tracking-[0.3em] font-black transition-colors"
+          >
+            Staff Login
+          </Link>
         </p>
       </footer>
 

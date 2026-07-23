@@ -1,11 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Used by the staff POS flow to call awardPointsForPayment (functions/index.js)
+// - see ManagerDashboard.processPayment.
+export const functions = getFunctions(app);
 
 // Test connection
 async function testConnection() {

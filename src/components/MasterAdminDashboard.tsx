@@ -35,6 +35,7 @@ import { cn } from '../lib/utils';
 import { usePin } from '../contexts/PinContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBookings } from '../contexts/BookingContext';
+import { printerService } from '../services/PrinterService';
 
 export default function MasterAdminDashboard() {
   const { logout } = usePin();
@@ -64,6 +65,42 @@ export default function MasterAdminDashboard() {
       setSettings(newSettings);
       refreshPins();
       setNongSomMessage(t('ล้างรหัสผ่านทั้งหมดเป็น 0000 เรียบร้อยแล้วค่ะบอส!', 'All PINs have been reset to 0000!'));
+    }
+  };
+
+  const handleTestPrint = async () => {
+    const sampleReceipt = {
+      storeName: storeConfig.storeName,
+      abn: storeConfig.abn,
+      address: storeConfig.address,
+      date: new Date().toLocaleString(),
+      customer: 'Test Customer',
+      therapist: 'Test Therapist',
+      service: 'Test Print - Sample Service',
+      price: 1.0,
+      paymentMethod: 'Cash',
+    };
+
+    try {
+      if (settings.printerConnection === 'USB') {
+        await printerService.printViaUSB(sampleReceipt);
+        setNongSomMessage(t('ส่งคำสั่งพิมพ์ผ่าน USB แล้วค่ะ! ถ้าเครื่อง Sunmi ไม่ตัดกระดาษออกมา ลองเช็คสาย USB หรือลองเลือกเครื่องอีกครั้งนะคะ', 'Sent the print job via USB! If the Sunmi printer did not print, check the USB cable or try selecting the device again.'));
+      } else if (settings.printerConnection === 'BLUETOOTH') {
+        await printerService.printViaBluetooth(sampleReceipt);
+        setNongSomMessage(t('ส่งคำสั่งพิมพ์ผ่าน Bluetooth แล้วค่ะ!', 'Sent the print job via Bluetooth!'));
+      } else if (settings.printerConnection === 'CLOUD') {
+        if (!settings.sunmiCloudToken) {
+          setNongSomMessage(t('ยังไม่ได้ใส่ Cloud Token เลยค่ะ กรุณากรอกก่อนทดสอบ Cloud Print นะคะ', 'No Cloud Token has been set yet - please enter one before testing Cloud Print.'));
+          return;
+        }
+        await printerService.printViaCloud(sampleReceipt, settings.sunmiCloudToken);
+        setNongSomMessage(t('หมายเหตุ: ระบบ Sunmi Cloud Print ยังเป็นแค่โครงร่าง (mock) อยู่ค่ะ ยังไม่ได้เชื่อมกับ Sunmi Open Platform จริง แนะนำให้ใช้โหมด WEB-USB แทนไปก่อนนะคะ', 'Note: Sunmi Cloud Print is still a placeholder - it is not wired to the real Sunmi Open Platform API yet. We recommend using WEB-USB mode for now.'));
+      } else {
+        window.print();
+      }
+    } catch (error) {
+      console.error('Test print failed', error);
+      setNongSomMessage(t(`ทดสอบพิมพ์ไม่สำเร็จค่ะ: ${error instanceof Error ? error.message : String(error)}`, `Test print failed: ${error instanceof Error ? error.message : String(error)}`));
     }
   };
 
@@ -844,7 +881,7 @@ export default function MasterAdminDashboard() {
                     className="flex items-center gap-4 pl-6"
                   >
                     <button
-                      onClick={() => window.print()}
+                      onClick={handleTestPrint}
                       className="flex items-center gap-2 px-6 py-3 bg-indigo-500/20 text-indigo-400 rounded-2xl font-bold border border-indigo-500/30 hover:bg-indigo-500/30 transition-all text-xs uppercase tracking-widest"
                     >
                       <Receipt size={16} />

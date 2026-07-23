@@ -48,6 +48,8 @@ import { cn, formatCurrency } from '../lib/utils';
 import { usePin } from '../contexts/PinContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBookings } from '../contexts/BookingContext';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
 import { printerService, ReceiptData } from '../services/PrinterService';
 import { googleSheetService } from '../services/googleSheetService';
 
@@ -529,6 +531,22 @@ export default function ManagerDashboard({ enablePrinting = true, billingPlan = 
     };
     
     setSalesLog(prev => [...prev, logData]);
+
+    // Award loyalty points server-side (Cloud Function - see functions/index.js).
+    // This terminal has no Firebase Auth session of its own (staff PIN is
+    // local-only), so it can't write points onto a customer's account
+    // directly under firestore.rules - the Cloud Function does that with
+    // Admin privileges instead. Fire-and-forget: a missing/undeployed
+    // function, or a guest with no loyalty account, must never block or
+    // fail the actual payment that already succeeded.
+    const loyaltyPhone = paymentSession.currentPhone;
+    const loyaltyEmail = paymentSession.currentEmail;
+    if (loyaltyPhone || loyaltyEmail) {
+      const awardPointsForPayment = httpsCallable(functions, 'awardPointsForPayment');
+      awardPointsForPayment({ phone: loyaltyPhone, email: loyaltyEmail, amount }).catch((err) => {
+        console.warn('Loyalty points award skipped/failed (non-blocking):', err);
+      });
+    }
 
     // Add Audit Log
     const paymentAudit: AuditLog = {
